@@ -2107,3 +2107,77 @@ public:
 };
 
 static int benchmarkCapacity = RegisterSample( "Benchmark", "Capacity", BenchmarkCapacity::Create );
+
+
+class BenchmarkGroundGhost : public Sample  
+{  
+public:  
+	explicit BenchmarkGroundGhost( SampleContext* context )
+	: Sample( context )
+	{  
+		if ( m_context->restart == false )  
+		{  
+			m_context->camera.center = { 0.0f, 5.0f };  
+			m_context->camera.zoom = 25.0f;  
+		}  
+
+		m_context->enableSleep = false;
+		m_tick = 0;
+
+		{
+
+			// Create ground bodies  
+			for ( int i = -GROUND_N; i < GROUND_N; i++ )  
+			{  
+				b2BodyDef bodyDef = b2DefaultBodyDef();  
+				bodyDef.type = b2_staticBody;  
+				bodyDef.position = { i * GROUND_W, 0.0f };  
+				b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );  
+
+				b2ShapeDef shapeDef = b2DefaultShapeDef();  
+				b2Polygon box = b2MakeBox( GROUND_W / 2, GROUND_H / 2 );  
+				b2CreatePolygonShape( bodyId, &shapeDef, &box );  
+			}  
+
+			// Create ball  
+			b2BodyDef ballDef = b2DefaultBodyDef();  
+			ballDef.type = b2_dynamicBody;  
+			ballDef.position = BALL_START;  
+			m_ballId = b2CreateBody( m_worldId, &ballDef );  
+
+			b2ShapeDef ballShapeDef = b2DefaultShapeDef();  
+			ballShapeDef.density = 1.0f;  
+			b2Circle circle = { { 0.0f, 0.0f }, BALL_RADIUS };  
+			b2CreateCircleShape( m_ballId, &ballShapeDef, &circle );  
+
+			// Apply initial force  
+			b2Body_ApplyForceToCenter( m_ballId, { FORCE * ( 0.5f / DT ), 0.0f }, true );  
+		}
+	}  
+
+	void Step() override  
+	{  
+		Sample::Step();
+		m_tick++;  
+	}  
+
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new BenchmarkGroundGhost( context );
+	}
+
+
+	static constexpr int GROUND_N = 20;  
+	static constexpr float GROUND_W = 1.0f;  
+	static constexpr float GROUND_H = 1.0f;  
+	static constexpr float BALL_RADIUS = 0.4f;  
+	static constexpr b2Vec2 BALL_START = { -10.0f, 0.9f };  
+	static constexpr float FORCE = 20.0f;  
+	static constexpr float DT = 1.0f / 60.0f;  
+
+	b2BodyId m_ballId;  
+	int m_tick;  
+};  
+  
+static int benchmarkGroundGhost = RegisterSample( "Benchmark", "Ground Ghost", BenchmarkGroundGhost::Create );
