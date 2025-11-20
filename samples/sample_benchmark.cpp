@@ -2227,9 +2227,9 @@ public:
 		}
 
 #if BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
-		DrawTextLine( "Disable Dynamic-Static Speculative Collisions: Enabled" );
+		DrawTextLine( "Dynamic-Static Speculative Collisions: Disabled" );
 #else
-		DrawTextLine( "Disable Dynamic-Static Speculative Collisions: Disabled" );
+		DrawTextLine( "Dynamic-Static Speculative Collisions: Enabled" );
 #endif
 		DrawTextLine( "Tick: %d", m_tick );	
 		DrawTextLine( "Current pos: (%.2f, %.2f)", ballPos.x, ballPos.y );
@@ -2267,3 +2267,323 @@ public:
 };  
   
 static int benchmarkGroundGhost = RegisterSample( "Benchmark", "Ground Ghost", BenchmarkGroundGhost::Create );
+
+
+class BenchmarkPyramidSmash : public Sample
+{
+public:
+    explicit BenchmarkPyramidSmash( SampleContext* context )
+        : Sample( context )
+    {
+        if ( m_context->restart == false )
+        {
+            m_context->camera.center = { 0.0f, 60.0f };
+            m_context->camera.zoom = 80.0f;
+        }
+
+        m_context->enableSleep = false;
+
+        // Constants
+        const int PYRAMID_HEIGHT = 100;
+        const float BOX_GAP = 0.1f;
+        const float BOX_SIZE = 1.0f;
+        const float GROUND_Y = -5.0f;
+        const float GRAVITY = 10.0f;
+        const float VEL_FACTOR = 9.0f;
+        const float DT = 1.0f / 60.0f;
+        const float GROUND_WIDTH = 200.0f;
+        const float GROUND_HEIGHT = 2.0f;
+        const bool IS_CIRCLES = true;
+
+        // Ground
+        {
+            b2BodyDef bodyDef = b2DefaultBodyDef();
+            bodyDef.position = { 0.0f, GROUND_Y };
+            b2BodyId groundId = b2CreateBody( m_worldId, &bodyDef );
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            b2Polygon box = b2MakeBox( GROUND_WIDTH / 2.0f, GROUND_HEIGHT / 2.0f );
+            b2CreatePolygonShape( groundId, &shapeDef, &box );
+        }
+
+        // Pyramid
+        for ( int row = 0; row < PYRAMID_HEIGHT; row++ )
+        {
+            int boxesInRow = PYRAMID_HEIGHT - row;
+            float startX = -( boxesInRow - 1 ) * ( BOX_SIZE + BOX_GAP ) / 2.0f;
+            for ( int i = 0; i < boxesInRow; i++ )
+            {
+                b2BodyDef bodyDef = b2DefaultBodyDef();
+                bodyDef.type = b2_dynamicBody;
+                float xPos = startX + i * ( BOX_SIZE + BOX_GAP );
+                float yPos = ( BOX_SIZE + BOX_GAP ) * row + BOX_SIZE / 2.0f + GROUND_Y + 1.5f;
+                bodyDef.position = { xPos, yPos + PYRAMID_HEIGHT };
+
+                b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );
+                b2ShapeDef shapeDef = b2DefaultShapeDef();
+                shapeDef.density = 1.0f;
+                shapeDef.material.customColor = b2_colorBox2DYellow;
+
+                if ( !IS_CIRCLES )
+                {
+                    b2Polygon box = b2MakeBox( BOX_SIZE / 2.0f, BOX_SIZE / 2.0f );
+                    b2CreatePolygonShape( bodyId, &shapeDef, &box );
+                }
+                else
+                {
+                    b2Circle circle = { { 0.0f, 0.0f }, BOX_SIZE / 2.0f };
+                    b2CreateCircleShape( bodyId, &shapeDef, &circle );
+                }
+
+                float forceY = -GRAVITY * VEL_FACTOR * ( 0.5f / DT );
+                b2Body_ApplyForceToCenter( bodyId, { 0.0f, forceY }, true );
+            }
+        }
+
+        // Static Circles
+        // Replicating the HTML LCG exactly: state = (state * 1664525 + 1013904223) % 2^32
+        uint32_t seed = 0;
+        auto LCG = [&seed]() -> float {
+            seed = ( seed * 1664525 + 1013904223 );
+            return (float)seed / 4294967296.0f;
+        };
+
+        int numCircles = (int)( PYRAMID_HEIGHT * 1.5f );
+        for ( int i = 0; i < numCircles; i++ )
+        {
+            float radius = 0.2f + LCG() * 0.5f;
+            float xPos = -25.0f + LCG() * 50.0f;
+            float yPos = GROUND_Y + 1.0f + LCG() * ( PYRAMID_HEIGHT * ( BOX_SIZE + BOX_GAP ) * 0.5f );
+
+            b2BodyDef bodyDef = b2DefaultBodyDef();
+            bodyDef.position = { xPos, yPos };
+            b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );
+
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            shapeDef.material.customColor = b2_colorBox2DBlue;
+            b2Circle circle = { { 0.0f, 0.0f }, radius };
+            b2CreateCircleShape( bodyId, &shapeDef, &circle );
+        }
+    }
+
+    void Step() override
+    {
+        Sample::Step();
+
+        // Use Box2D profile to get exact step time in milliseconds
+        b2Profile profile = b2World_GetProfile( m_worldId );
+        float duration = profile.step;
+
+        m_tickTimes.push_back( duration );
+        if ( m_tickTimes.size() > 120 )
+        {
+            m_tickTimes.erase( m_tickTimes.begin() );
+        }
+
+        float minTick = FLT_MAX;
+        float maxTick = -FLT_MAX;
+        float sumTick = 0.0f;
+        for ( float t : m_tickTimes )
+        {
+            if ( t < minTick ) minTick = t;
+            if ( t > maxTick ) maxTick = t;
+            sumTick += t;
+        }
+        float avgTick = m_tickTimes.empty() ? 0.0f : sumTick / m_tickTimes.size();
+
+        DrawTextLine( "Pyramid height: %d", 100 );
+        DrawTextLine( "Tick ms: min %.2f  avg %.2f  max %.2f", minTick, avgTick, maxTick );
+
+#if BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Disabled" );
+#else
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Enabled" );
+#endif
+    }
+
+    static Sample* Create( SampleContext* context )
+    {
+        return new BenchmarkPyramidSmash( context );
+    }
+
+    std::vector<float> m_tickTimes;
+};
+
+static int benchmarkPyramidSmash = RegisterSample( "Benchmark", "Pyramid Smash", BenchmarkPyramidSmash::Create );
+
+
+// Benchmark 1: NxN box made of 1x1 blocks, filling with balls
+class BenchmarkBoxFillBlocks : public Sample
+{
+public:
+    explicit BenchmarkBoxFillBlocks( SampleContext* context )
+        : Sample( context )
+    {
+        if ( m_context->restart == false )
+        {
+            m_context->camera.center = { 0.0f, 25.0f };
+            m_context->camera.zoom = 60.0f;
+        }
+
+        m_context->enableSleep = false;
+        m_tick = 0;
+        m_ballCount = 0;
+
+
+
+        b2ShapeDef shapeDef = b2DefaultShapeDef();
+        b2Polygon box = b2MakeBox( HALF_SIZE, HALF_SIZE );
+
+        // Create walls from individual blocks
+        for ( int i = 0; i < N; ++i )
+        {
+            // Bottom
+            CreateBlock( START_X + i * BOX_SIZE, START_Y, shapeDef, box );
+            // Top
+            CreateBlock( START_X + i * BOX_SIZE, START_Y + ( N - 1 ) * BOX_SIZE, shapeDef, box );
+            // Left
+            CreateBlock( START_X, START_Y + i * BOX_SIZE, shapeDef, box );
+            // Right
+            CreateBlock( START_X + ( N - 1 ) * BOX_SIZE, START_Y + i * BOX_SIZE, shapeDef, box );
+        }
+    }
+
+    void CreateBlock( float x, float y, b2ShapeDef& shapeDef, b2Polygon& box )
+    {
+        b2BodyDef bodyDef = b2DefaultBodyDef();
+        bodyDef.position = { x, y };
+        b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );
+        b2CreatePolygonShape( bodyId, &shapeDef, &box );
+    }
+
+    void Step() override
+    {
+        Sample::Step();
+        m_tick++;
+
+        // Spawn a ball every tick
+        {
+            b2BodyDef bodyDef = b2DefaultBodyDef();
+            bodyDef.type = b2_dynamicBody;
+            // Spawn near top center
+            bodyDef.position = { RandomFloatRange( -2.0f, 2.0f ), N * 0.8f };
+            b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );
+
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            shapeDef.density = 1.0f;
+            b2Circle circle = { { 0.0f, 0.0f }, 0.4f };
+            b2CreateCircleShape( bodyId, &shapeDef, &circle );
+            m_ballCount++;
+        }
+
+        DrawTextLine( "Ticks: %d", m_tick );
+        DrawTextLine( "Balls: %d", m_ballCount );
+#if BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Disabled" );
+#else
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Enabled" );
+#endif
+    }
+
+    static Sample* Create( SampleContext* context )
+    {
+        return new BenchmarkBoxFillBlocks( context );
+    }
+
+		static constexpr int N = 20;
+		static constexpr float BOX_SIZE = 1.0f;
+		static constexpr float HALF_SIZE = BOX_SIZE * 0.5f;
+		static constexpr float START_X = -N * HALF_SIZE;
+		static constexpr float START_Y = 0.0f;
+
+    int m_tick;
+    int m_ballCount;
+};
+
+static int benchmarkBoxFillBlocks = RegisterSample( "Benchmark", "Box Fill (Blocks)", BenchmarkBoxFillBlocks::Create );
+
+
+// Benchmark 2: NxN box made of 4 large walls, filling with balls
+class BenchmarkBoxFillWalls : public Sample
+{
+public:
+    explicit BenchmarkBoxFillWalls( SampleContext* context )
+        : Sample( context )
+    {
+        if ( m_context->restart == false )
+        {
+            m_context->camera.center = { 0.0f, 25.0f };
+            m_context->camera.zoom = 60.0f;
+        }
+
+        m_context->enableSleep = false;
+        m_tick = 0;
+        m_ballCount = 0;
+
+
+        b2BodyDef bodyDef = b2DefaultBodyDef();
+        bodyDef.position = { 0.0f, CENTER_Y };
+        b2BodyId groundId = b2CreateBody( m_worldId, &bodyDef );
+        b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+        // Bottom Wall
+        b2Polygon bottom = b2MakeOffsetBox( N * BOX_SIZE * 0.5f, WALL_THICKNESS * 0.5f, { 0.0f, -CENTER_Y }, b2Rot_identity );
+        b2CreatePolygonShape( groundId, &shapeDef, &bottom );
+
+        // Top Wall
+        b2Polygon top = b2MakeOffsetBox( N * BOX_SIZE * 0.5f, WALL_THICKNESS * 0.5f, { 0.0f, CENTER_Y }, b2Rot_identity );
+        b2CreatePolygonShape( groundId, &shapeDef, &top );
+
+        // Left Wall
+        b2Polygon left = b2MakeOffsetBox( WALL_THICKNESS * 0.5f, INNER_SIZE * 0.5f, { -( N - 1.0f ) * BOX_SIZE * 0.5f, 0.0f }, b2Rot_identity );
+        b2CreatePolygonShape( groundId, &shapeDef, &left );
+
+        // Right Wall
+        b2Polygon right = b2MakeOffsetBox( WALL_THICKNESS * 0.5f, INNER_SIZE * 0.5f, { ( N - 1.0f ) * BOX_SIZE * 0.5f, 0.0f }, b2Rot_identity );
+        b2CreatePolygonShape( groundId, &shapeDef, &right );
+    }
+
+    void Step() override
+    {
+        Sample::Step();
+        m_tick++;
+
+        // Spawn a ball every tick
+        {
+            b2BodyDef bodyDef = b2DefaultBodyDef();
+            bodyDef.type = b2_dynamicBody;
+            bodyDef.position = { RandomFloatRange( -2.0f, 2.0f ), N * 0.8f };
+            b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );
+
+            b2ShapeDef shapeDef = b2DefaultShapeDef();
+            shapeDef.density = 1.0f;
+            b2Circle circle = { { 0.0f, 0.0f }, 0.4f };
+            b2CreateCircleShape( bodyId, &shapeDef, &circle );
+            m_ballCount++;
+        }
+
+        DrawTextLine( "Ticks: %d", m_tick );
+        DrawTextLine( "Balls: %d", m_ballCount );
+#if BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Disabled" );
+#else
+        DrawTextLine( "Dynamic-Static Speculative Collisions: Enabled" );
+#endif
+    }
+
+    static Sample* Create( SampleContext* context )
+    {
+        return new BenchmarkBoxFillWalls( context );
+    }
+
+
+		static constexpr float N = 20.0f;
+		static constexpr float BOX_SIZE = 1.0f;
+		static constexpr float WALL_THICKNESS = 1.0f;
+		static constexpr float INNER_SIZE = ( N - 2.0f ) * BOX_SIZE; // Inner dimension
+		static constexpr float CENTER_Y = ( N - 1.0f ) * BOX_SIZE * 0.5f;
+		
+    int m_tick;
+    int m_ballCount;
+};
+
+static int benchmarkBoxFillWalls = RegisterSample( "Benchmark", "Box Fill (Walls)", BenchmarkBoxFillWalls::Create );

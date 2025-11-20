@@ -32,3 +32,19 @@ cmake --build build_nospec --target samples
 Open the "Ground Ghost" benchmark in both applications. 
 - The **Standard** build should say: "Disable Dynamic-Static Speculative Collisions: Disabled"
 - The **No-Spec** build should say: "Disable Dynamic-Static Speculative Collisions: Enabled"
+
+## Running Unit Tests (with speculative disabled)
+
+```bash
+cmake -B build -DBUILD_SHARED_LIBS=OFF -DBOX2D_UNIT_TESTS=ON -DBOX2D_VALIDATE=ON -DBOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE=ON
+
+cmake --build build --config Debug
+
+
+   
+./build/bin/test              # Linux/macOS  
+./build/bin/Debug/test.exe    # Windows
+```
+**Important:** The Falling Hinge unit test fails due to changes in collision handling. Several `Speculative` integration tests in `samples/` also fail (i.e. the dynamic body phases through the static body).
+
+These failures are expected, in return for reduced ghost collision severity.
