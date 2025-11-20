@@ -86,11 +86,16 @@ void CreateJointGrid( b2WorldId worldId )
 	free( bodies );
 }
 
-void CreateLargePyramid( b2WorldId worldId )
+void CreateLargePyramid( b2WorldId worldId, int overrideBaseCount )
 {
 	b2World_EnableSleeping( worldId, false );
 
 	int baseCount = BENCHMARK_DEBUG ? 20 : 100;
+
+	if ( overrideBaseCount > 0 )
+	{
+		baseCount = overrideBaseCount;
+	}
 
 	{
 		b2BodyDef bodyDef = b2DefaultBodyDef();

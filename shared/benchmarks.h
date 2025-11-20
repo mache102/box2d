@@ -14,7 +14,7 @@ extern "C"
 #endif
 
 void CreateJointGrid( b2WorldId worldId );
-void CreateLargePyramid( b2WorldId worldId );
+void CreateLargePyramid( b2WorldId worldId, int overrideBaseCount );
 void CreateManyPyramids( b2WorldId worldId );
 void CreateRain( b2WorldId worldId );
 float StepRain( b2WorldId worldId, int stepCount );

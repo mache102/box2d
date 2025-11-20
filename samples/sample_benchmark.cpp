@@ -682,7 +682,7 @@ public:
 			m_context->enableSleep = false;
 		}
 
-		CreateLargePyramid( m_worldId );
+		CreateLargePyramid( m_worldId, 0 );
 	}
 
 	static Sample* Create( SampleContext* context )
@@ -692,6 +692,58 @@ public:
 };
 
 static int benchmarkLargePyramid = RegisterSample( "Benchmark", "Large Pyramid", BenchmarkLargePyramid::Create );
+
+
+class Benchmark50Pyramid : public Sample
+{
+public:
+	explicit Benchmark50Pyramid( SampleContext* context )
+		: Sample( context )
+	{
+		if ( m_context->restart == false )
+		{
+			m_context->camera.center = { 0.0f, 50.0f };
+			m_context->camera.zoom = 25.0f * 2.2f;
+			m_context->enableSleep = false;
+		}
+
+		CreateLargePyramid( m_worldId, 50 );
+	}
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new Benchmark50Pyramid( context );
+	}
+};
+
+static int benchmark50Pyramid = RegisterSample( "Benchmark", "Size 50 Pyramid", Benchmark50Pyramid::Create );
+
+
+class Benchmark100Pyramid : public Sample
+{
+public:
+	explicit Benchmark100Pyramid( SampleContext* context )
+		: Sample( context )
+	{
+		if ( m_context->restart == false )
+		{
+			m_context->camera.center = { 0.0f, 50.0f };
+			m_context->camera.zoom = 25.0f * 2.2f;
+			m_context->enableSleep = false;
+		}
+
+		CreateLargePyramid( m_worldId, 100 );
+	}
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new Benchmark100Pyramid( context );
+	}
+};
+
+static int benchmark100Pyramid = RegisterSample( "Benchmark", "Size 100 Pyramid", Benchmark100Pyramid::Create );
+
+
 
 class BenchmarkManyPyramids : public Sample
 {
@@ -2172,7 +2224,7 @@ public:
 	static constexpr float GROUND_W = 1.0f;  
 	static constexpr float GROUND_H = 1.0f;  
 	static constexpr float BALL_RADIUS = 0.4f;  
-	static constexpr b2Vec2 BALL_START = { -10.0f, 0.9f };  
+	static constexpr b2Vec2 BALL_START = { -10.0f, 1.0f };  
 	static constexpr float FORCE = 20.0f;  
 	static constexpr float DT = 1.0f / 60.0f;  
 
