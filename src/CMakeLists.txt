@@ -125,6 +125,11 @@ if (BOX2D_DISABLE_SIMD)
 	target_compile_definitions(box2d PRIVATE BOX2D_DISABLE_SIMD)
 endif()
 
+if (BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE)
+    message(STATUS "Box2D static-dynamic speculative collision disabled")	
+    target_compile_definitions(box2d PUBLIC BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE)
+endif()
+
 if (MSVC)
 	message(STATUS "Box2D on MSVC")	
 	if (BUILD_SHARED_LIBS)

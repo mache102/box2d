@@ -2175,15 +2175,17 @@ public:
 
 		m_context->enableSleep = false;
 		m_tick = 0;
+		m_liftoff_x_val = -HUGE_VALF;
+		m_max_height_reached = BALL_START.y;
 
 		{
 
 			// Create ground bodies  
-			for ( int i = -GROUND_N; i < GROUND_N; i++ )  
+			for ( int i = 0; i < GROUND_N; i++ )  
 			{  
 				b2BodyDef bodyDef = b2DefaultBodyDef();  
-				bodyDef.type = b2_staticBody;  
-				bodyDef.position = { i * GROUND_W, 0.0f };  
+				bodyDef.type = b2_staticBody; 
+				bodyDef.position = { i * GROUND_W, GROUND_HEIGHT };  
 				b2BodyId bodyId = b2CreateBody( m_worldId, &bodyDef );  
 
 				b2ShapeDef shapeDef = b2DefaultShapeDef();  
@@ -2211,7 +2213,34 @@ public:
 	{  
 		Sample::Step();
 		m_tick++;  
-	}  
+
+		// Check max height reached
+		b2Vec2 ballPos = b2Body_GetPosition( m_ballId );	
+
+		if ( ballPos.y > m_max_height_reached )	
+		{	
+			m_max_height_reached = ballPos.y;	
+		}
+		if ( m_liftoff_x_val == -HUGE_VALF && ( ballPos.y ) > LIFTOFF_THRESHOLD )	
+		{	
+			m_liftoff_x_val = ballPos.x;	
+		}
+
+#if BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
+		DrawTextLine( "Disable Dynamic-Static Speculative Collisions: Enabled" );
+#else
+		DrawTextLine( "Disable Dynamic-Static Speculative Collisions: Disabled" );
+#endif
+		DrawTextLine( "Tick: %d", m_tick );	
+		DrawTextLine( "Current pos: (%.2f, %.2f)", ballPos.x, ballPos.y );
+		DrawTextLine( "Max Height Reached: %.2f", m_max_height_reached );
+
+		if (m_liftoff_x_val != -HUGE_VALF) {
+			DrawTextLine( "Liftoff detected at x = %.2f", m_liftoff_x_val );
+		} else {
+			DrawTextLine( "Liftoff not yet detected" );
+		}
+	}  	
 
 
 	static Sample* Create( SampleContext* context )
@@ -2220,16 +2249,21 @@ public:
 	}
 
 
-	static constexpr int GROUND_N = 20;  
+	static constexpr int GROUND_N = 200;  
 	static constexpr float GROUND_W = 1.0f;  
 	static constexpr float GROUND_H = 1.0f;  
-	static constexpr float BALL_RADIUS = 0.4f;  
-	static constexpr b2Vec2 BALL_START = { -10.0f, 1.0f };  
-	static constexpr float FORCE = 20.0f;  
+	static constexpr float GROUND_HEIGHT = -0.75f;
+	static constexpr float BALL_RADIUS = 0.25f;  
+	static constexpr b2Vec2 BALL_START = { 0.0f, 0.0f };  
+	static constexpr float FORCE = 50.0f;  
 	static constexpr float DT = 1.0f / 60.0f;  
+
+	static constexpr float LIFTOFF_THRESHOLD = 0.1f; // height above ground to consider 'liftoff'
 
 	b2BodyId m_ballId;  
 	int m_tick;  
+	float m_max_height_reached;
+	float m_liftoff_x_val; // first x-value the ball took a ghost collision and 'flew' off the ground
 };  
   
 static int benchmarkGroundGhost = RegisterSample( "Benchmark", "Ground Ghost", BenchmarkGroundGhost::Create );

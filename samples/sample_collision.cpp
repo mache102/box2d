@@ -2440,7 +2440,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideCircles( &circle1, transform1, &circle2, transform2 );
+			b2Manifold m = b2CollideCircles( &circle1, transform1, &circle2, transform2, true );
 
 			b2Vec2 center1 = b2TransformPoint( transform1, circle1.center );
 			DrawSolidCircle( m_draw, { center1, transform1.q }, circle1.radius, color1 );
@@ -2460,7 +2460,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideCapsuleAndCircle( &capsule, transform1, &circle, transform2 );
+			b2Manifold m = b2CollideCapsuleAndCircle( &capsule, transform1, &circle, transform2, true );
 
 			b2Vec2 v1 = b2TransformPoint( transform1, capsule.center1 );
 			b2Vec2 v2 = b2TransformPoint( transform1, capsule.center2 );
@@ -2482,7 +2482,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideSegmentAndCircle( &segment, transform1, &circle, transform2 );
+			b2Manifold m = b2CollideSegmentAndCircle( &segment, transform1, &circle, transform2, true );
 
 			b2Vec2 p1 = b2TransformPoint( transform1, segment.point1 );
 			b2Vec2 p2 = b2TransformPoint( transform1, segment.point2 );
@@ -2505,7 +2505,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollidePolygonAndCircle( &box, transform1, &circle, transform2 );
+			b2Manifold m = b2CollidePolygonAndCircle( &box, transform1, &circle, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box.vertices, box.count, m_round, color1 );
 
@@ -2525,7 +2525,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideCapsules( &capsule1, transform1, &capsule2, transform2 );
+			b2Manifold m = b2CollideCapsules( &capsule1, transform1, &capsule2, transform2, true );
 
 			b2Vec2 v1 = b2TransformPoint( transform1, capsule1.center1 );
 			b2Vec2 v2 = b2TransformPoint( transform1, capsule1.center2 );
@@ -2548,7 +2548,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollidePolygonAndCapsule( &box, transform1, &capsule, transform2 );
+			b2Manifold m = b2CollidePolygonAndCapsule( &box, transform1, &capsule, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box.vertices, box.count, box.radius, color1 );
 
@@ -2569,7 +2569,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideSegmentAndCapsule( &segment, transform1, &capsule, transform2 );
+			b2Manifold m = b2CollideSegmentAndCapsule( &segment, transform1, &capsule, transform2, true );
 
 			b2Vec2 p1 = b2TransformPoint( transform1, segment.point1 );
 			b2Vec2 p2 = b2TransformPoint( transform1, segment.point2 );
@@ -2596,7 +2596,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollidePolygons( &box1, transform1, &box, transform2 );
+			b2Manifold m = b2CollidePolygons( &box1, transform1, &box, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box1.vertices, box1.count, box1.radius, color1 );
 			DrawSolidPolygon( m_draw, transform2, box.vertices, box.count, box.radius, color2 );
@@ -2615,7 +2615,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({0.0f, -0.1f}, offset), {0.0f, 1.0f}};
 
-			b2Manifold m = b2CollidePolygons( &box1, transform1, &box, transform2 );
+			b2Manifold m = b2CollidePolygons( &box1, transform1, &box, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box1.vertices, box1.count, box1.radius, color1 );
 			DrawSolidPolygon( m_draw, transform2, box.vertices, box.count, box.radius, color2 );
@@ -2635,7 +2635,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({0.0f, -0.1f}, offset), {0.0f, 1.0f}};
 
-			b2Manifold m = b2CollidePolygons( &box, transform1, &rox, transform2 );
+			b2Manifold m = b2CollidePolygons( &box, transform1, &rox, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box.vertices, box.count, box.radius, color1 );
 			DrawSolidPolygon( m_draw, transform2, rox.vertices, rox.count, rox.radius, color2 );
@@ -2655,7 +2655,7 @@ public:
 			// b2Transform transform1 = {{6.48024225f, 2.07872653f}, {-0.938356698f, 0.345668465f}};
 			// b2Transform transform2 = {{5.52862263f, 2.51146317f}, {-0.859374702f, -0.511346340f}};
 
-			b2Manifold m = b2CollidePolygons( &rox, transform1, &rox, transform2 );
+			b2Manifold m = b2CollidePolygons( &rox, transform1, &rox, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, rox.vertices, rox.count, rox.radius, color1 );
 			DrawSolidPolygon( m_draw, transform2, rox.vertices, rox.count, rox.radius, color2 );
@@ -2675,7 +2675,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({-1.44583416f, 0.397352695f}, offset), m_transform.q};
 
-			b2Manifold m = b2CollideSegmentAndPolygon( &segment, transform1, &rox, transform2 );
+			b2Manifold m = b2CollideSegmentAndPolygon( &segment, transform1, &rox, transform2, true );
 
 			b2Vec2 p1 = b2TransformPoint( transform1, segment.point1 );
 			b2Vec2 p2 = b2TransformPoint( transform1, segment.point2 );
@@ -2696,7 +2696,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({0.0f, -0.1f}, offset), {0.0f, 1.0f}};
 
-			b2Manifold m = b2CollidePolygons( &wox, transform1, &wox, transform2 );
+			b2Manifold m = b2CollidePolygons( &wox, transform1, &wox, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, wox.vertices, wox.count, wox.radius, color1 );
 			DrawSolidPolygon( m_draw, transform1, wox.vertices, wox.count, 0.0f, color1 );
@@ -2723,7 +2723,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({0.0f, -0.1f}, offset), {0.0f, 1.0f}};
 
-			b2Manifold m = b2CollidePolygons( &w1, transform1, &w2, transform2 );
+			b2Manifold m = b2CollidePolygons( &w1, transform1, &w2, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, w1.vertices, w1.count, w1.radius, color1 );
 			DrawSolidPolygon( m_draw, transform1, w1.vertices, w1.count, 0.0f, color1 );
@@ -2748,7 +2748,7 @@ public:
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 			// b2Transform transform2 = {b2Add({0.0f, -0.1f}, offset), {0.0f, 1.0f}};
 
-			b2Manifold m = b2CollidePolygons( &box, transform1, &tri, transform2 );
+			b2Manifold m = b2CollidePolygons( &box, transform1, &tri, transform2, true );
 
 			DrawSolidPolygon( m_draw, transform1, box.vertices, box.count, 0.0f, color1 );
 			DrawSolidPolygon( m_draw, transform2, tri.vertices, tri.count, 0.0f, color2 );
@@ -2766,7 +2766,7 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m = b2CollideChainSegmentAndCircle( &segment, transform1, &circle, transform2 );
+			b2Manifold m = b2CollideChainSegmentAndCircle( &segment, transform1, &circle, transform2, true );
 
 			b2Vec2 g1 = b2TransformPoint( transform1, segment.ghost1 );
 			b2Vec2 g2 = b2TransformPoint( transform1, segment.ghost2 );
@@ -2798,8 +2798,8 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m1 = b2CollideChainSegmentAndPolygon( &segment1, transform1, &rox, transform2, &m_smgroxCache1 );
-			b2Manifold m2 = b2CollideChainSegmentAndPolygon( &segment2, transform1, &rox, transform2, &m_smgroxCache2 );
+			b2Manifold m1 = b2CollideChainSegmentAndPolygon( &segment1, transform1, &rox, transform2, true, &m_smgroxCache1 );
+			b2Manifold m2 = b2CollideChainSegmentAndPolygon( &segment2, transform1, &rox, transform2, true, &m_smgroxCache2 );
 
 			{
 				b2Vec2 g2 = b2TransformPoint( transform1, segment1.ghost2 );
@@ -2839,8 +2839,8 @@ public:
 			b2Transform transform1 = { offset, b2Rot_identity };
 			b2Transform transform2 = { b2Add( m_transform.p, offset ), m_transform.q };
 
-			b2Manifold m1 = b2CollideChainSegmentAndCapsule( &segment1, transform1, &capsule, transform2, &m_smgcapCache1 );
-			b2Manifold m2 = b2CollideChainSegmentAndCapsule( &segment2, transform1, &capsule, transform2, &m_smgcapCache2 );
+			b2Manifold m1 = b2CollideChainSegmentAndCapsule( &segment1, transform1, &capsule, transform2, true, &m_smgcapCache1 );
+			b2Manifold m2 = b2CollideChainSegmentAndCapsule( &segment2, transform1, &capsule, transform2, true, &m_smgcapCache2 );
 
 			{
 				b2Vec2 g2 = b2TransformPoint( transform1, segment1.ghost2 );
@@ -3156,7 +3156,7 @@ public:
 			for ( int i = 0; i < m_count; ++i )
 			{
 				const b2ChainSegment* segment = m_segments + i;
-				b2Manifold m = b2CollideChainSegmentAndCircle( segment, transform1, &circle, transform2 );
+				b2Manifold m = b2CollideChainSegmentAndCircle( segment, transform1, &circle, transform2, true );
 				DrawManifold( &m );
 			}
 		}
@@ -3170,7 +3170,7 @@ public:
 			{
 				const b2ChainSegment* segment = m_segments + i;
 				b2SimplexCache cache = {};
-				b2Manifold m = b2CollideChainSegmentAndPolygon( segment, transform1, &rox, transform2, &cache );
+				b2Manifold m = b2CollideChainSegmentAndPolygon( segment, transform1, &rox, transform2, true, &cache );
 				DrawManifold( &m );
 			}
 		}

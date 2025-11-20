@@ -91,7 +91,7 @@ b2ContactData b2Contact_GetData( b2ContactId contactId )
 }
 
 typedef b2Manifold b2ManifoldFcn( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-								  b2SimplexCache* cache );
+                                  bool allowSpeculative, b2SimplexCache* cache );
 
 struct b2ContactRegister
 {
@@ -103,85 +103,85 @@ static struct b2ContactRegister s_registers[b2_shapeTypeCount][b2_shapeTypeCount
 static bool s_initialized = false;
 
 static b2Manifold b2CircleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-									b2SimplexCache* cache )
+                                    bool allowSpeculative, b2SimplexCache* cache )
 {
-	B2_UNUSED( cache );
-	return b2CollideCircles( &shapeA->circle, xfA, &shapeB->circle, xfB );
+    B2_UNUSED( cache );
+    return b2CollideCircles( &shapeA->circle, xfA, &shapeB->circle, xfB, allowSpeculative );
 }
 
 static b2Manifold b2CapsuleAndCircleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											  b2SimplexCache* cache )
+											  bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideCapsuleAndCircle( &shapeA->capsule, xfA, &shapeB->circle, xfB );
+	return b2CollideCapsuleAndCircle( &shapeA->capsule, xfA, &shapeB->circle, xfB, allowSpeculative );
 }
 
 static b2Manifold b2CapsuleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-									 b2SimplexCache* cache )
+									 bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideCapsules( &shapeA->capsule, xfA, &shapeB->capsule, xfB );
+	return b2CollideCapsules( &shapeA->capsule, xfA, &shapeB->capsule, xfB, allowSpeculative );
 }
 
 static b2Manifold b2PolygonAndCircleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											  b2SimplexCache* cache )
+											  bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollidePolygonAndCircle( &shapeA->polygon, xfA, &shapeB->circle, xfB );
+	return b2CollidePolygonAndCircle( &shapeA->polygon, xfA, &shapeB->circle, xfB, allowSpeculative );
 }
 
 static b2Manifold b2PolygonAndCapsuleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											   b2SimplexCache* cache )
+											   bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollidePolygonAndCapsule( &shapeA->polygon, xfA, &shapeB->capsule, xfB );
+	return b2CollidePolygonAndCapsule( &shapeA->polygon, xfA, &shapeB->capsule, xfB, allowSpeculative );
 }
 
 static b2Manifold b2PolygonManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-									 b2SimplexCache* cache )
+									 bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollidePolygons( &shapeA->polygon, xfA, &shapeB->polygon, xfB );
+	return b2CollidePolygons( &shapeA->polygon, xfA, &shapeB->polygon, xfB, allowSpeculative );
 }
 
 static b2Manifold b2SegmentAndCircleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											  b2SimplexCache* cache )
+											  bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideSegmentAndCircle( &shapeA->segment, xfA, &shapeB->circle, xfB );
+	return b2CollideSegmentAndCircle( &shapeA->segment, xfA, &shapeB->circle, xfB, allowSpeculative );
 }
 
 static b2Manifold b2SegmentAndCapsuleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											   b2SimplexCache* cache )
+											   bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideSegmentAndCapsule( &shapeA->segment, xfA, &shapeB->capsule, xfB );
+	return b2CollideSegmentAndCapsule( &shapeA->segment, xfA, &shapeB->capsule, xfB, allowSpeculative );
 }
 
 static b2Manifold b2SegmentAndPolygonManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-											   b2SimplexCache* cache )
+											   bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideSegmentAndPolygon( &shapeA->segment, xfA, &shapeB->polygon, xfB );
+	return b2CollideSegmentAndPolygon( &shapeA->segment, xfA, &shapeB->polygon, xfB, allowSpeculative );
 }
 
 static b2Manifold b2ChainSegmentAndCircleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB, b2Transform xfB,
-												   b2SimplexCache* cache )
+												   bool allowSpeculative, b2SimplexCache* cache )
 {
 	B2_UNUSED( cache );
-	return b2CollideChainSegmentAndCircle( &shapeA->chainSegment, xfA, &shapeB->circle, xfB );
+	return b2CollideChainSegmentAndCircle( &shapeA->chainSegment, xfA, &shapeB->circle, xfB, allowSpeculative );
 }
 
 static b2Manifold b2ChainSegmentAndCapsuleManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB,
-													b2Transform xfB, b2SimplexCache* cache )
+													b2Transform xfB, bool allowSpeculative, b2SimplexCache* cache )
 {
-	return b2CollideChainSegmentAndCapsule( &shapeA->chainSegment, xfA, &shapeB->capsule, xfB, cache );
+	return b2CollideChainSegmentAndCapsule( &shapeA->chainSegment, xfA, &shapeB->capsule, xfB, allowSpeculative, cache );
 }
 
 static b2Manifold b2ChainSegmentAndPolygonManifold( const b2Shape* shapeA, b2Transform xfA, const b2Shape* shapeB,
-													b2Transform xfB, b2SimplexCache* cache )
+													b2Transform xfB, bool allowSpeculative, b2SimplexCache* cache )
 {
-	return b2CollideChainSegmentAndPolygon( &shapeA->chainSegment, xfA, &shapeB->polygon, xfB, cache );
+	return b2CollideChainSegmentAndPolygon( &shapeA->chainSegment, xfA, &shapeB->polygon, xfB, allowSpeculative, cache );
 }
 
 static void b2AddType( b2ManifoldFcn* fcn, b2ShapeType type1, b2ShapeType type2 )
@@ -521,14 +521,36 @@ b2ContactSim* b2GetContactSim( b2World* world, b2Contact* contact )
 // Update the contact manifold and touching status.
 // Note: do not assume the shape AABBs are overlapping or are valid.
 bool b2UpdateContact( b2World* world, b2ContactSim* contactSim, b2Shape* shapeA, b2Transform transformA, b2Vec2 centerOffsetA,
-					  b2Shape* shapeB, b2Transform transformB, b2Vec2 centerOffsetB )
+                      b2Shape* shapeB, b2Transform transformB, b2Vec2 centerOffsetB )
 {
-	// Save old manifold
-	b2Manifold oldManifold = contactSim->manifold;
+    // Save old manifold
+    b2Manifold oldManifold = contactSim->manifold;
 
-	// Compute new manifold
-	b2ManifoldFcn* fcn = s_registers[shapeA->type][shapeB->type].fcn;
-	contactSim->manifold = fcn( shapeA, transformA, shapeB, transformB, &contactSim->cache );
+    // NEW: Determine if speculative collision is allowed
+		bool allowSpeculative = true;
+
+#ifdef BOX2D_DISABLE_STATIC_DYNAMIC_SPECULATIVE
+		// Determine if speculative collision is allowed
+		b2Body* bodyA = b2BodyArray_Get( &world->bodies, shapeA->bodyId );
+		b2Body* bodyB = b2BodyArray_Get( &world->bodies, shapeB->bodyId );
+		
+		bool isStaticA = bodyA->type == b2_staticBody;
+		bool isStaticB = bodyB->type == b2_staticBody;
+		bool isDynamicA = bodyA->type == b2_dynamicBody;
+		bool isDynamicB = bodyB->type == b2_dynamicBody;
+
+		// Disable speculative if one is static and the other is dynamic
+		if ( (isStaticA && isDynamicB) || (isStaticB && isDynamicA) )
+		{
+				allowSpeculative = false; 
+		}
+#endif
+
+    // Compute new manifold
+    b2ManifoldFcn* fcn = s_registers[shapeA->type][shapeB->type].fcn;
+    // Pass the flag
+    contactSim->manifold = fcn( shapeA, transformA, shapeB, transformB, allowSpeculative, &contactSim->cache );
+
 
 	// Keep these updated in case the values on the shapes are modified
 	contactSim->friction = world->frictionCallback( shapeA->material.friction, shapeA->material.userMaterialId,

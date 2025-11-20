@@ -37,7 +37,7 @@ static b2Polygon b2MakeCapsule( b2Vec2 p1, b2Vec2 p2, float radius )
 // localAnchorB = qBc * (point - pB)
 // anchorB = point - pB = qA * localAnchorA + pA - pB
 //         = anchorA + (pA - pB)
-b2Manifold b2CollideCircles( const b2Circle* circleA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB )
+b2Manifold b2CollideCircles( const b2Circle* circleA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Manifold manifold = { 0 };
 
@@ -53,7 +53,9 @@ b2Manifold b2CollideCircles( const b2Circle* circleA, b2Transform xfA, const b2C
 	float radiusB = circleB->radius;
 
 	float separation = distance - radiusA - radiusB;
-	if ( separation > B2_SPECULATIVE_DISTANCE )
+
+	float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
+  if ( separation > speculativeDistance )
 	{
 		return manifold;
 	}
@@ -74,7 +76,7 @@ b2Manifold b2CollideCircles( const b2Circle* circleA, b2Transform xfA, const b2C
 }
 
 /// Compute the collision manifold between a capsule and circle
-b2Manifold b2CollideCapsuleAndCircle( const b2Capsule* capsuleA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB )
+b2Manifold b2CollideCapsuleAndCircle( const b2Capsule* capsuleA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Manifold manifold = { 0 };
 
@@ -118,7 +120,8 @@ b2Manifold b2CollideCapsuleAndCircle( const b2Capsule* capsuleA, b2Transform xfA
 	float radiusA = capsuleA->radius;
 	float radiusB = circleB->radius;
 	float separation = distance - radiusA - radiusB;
-	if ( separation > B2_SPECULATIVE_DISTANCE )
+	float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
+  if ( separation > speculativeDistance )
 	{
 		return manifold;
 	}
@@ -138,10 +141,10 @@ b2Manifold b2CollideCapsuleAndCircle( const b2Capsule* capsuleA, b2Transform xfA
 	return manifold;
 }
 
-b2Manifold b2CollidePolygonAndCircle( const b2Polygon* polygonA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB )
+b2Manifold b2CollidePolygonAndCircle( const b2Polygon* polygonA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Manifold manifold = { 0 };
-	const float speculativeDistance = B2_SPECULATIVE_DISTANCE;
+	const float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
 
 	b2Transform xf = b2InvMulTransforms( xfA, xfB );
 
@@ -258,7 +261,7 @@ b2Manifold b2CollidePolygonAndCircle( const b2Polygon* polygonA, b2Transform xfA
 
 // Follows Ericson 5.1.9 Closest Points of Two Line Segments
 // Adds some logic to support clipping to get two contact points
-b2Manifold b2CollideCapsules( const b2Capsule* capsuleA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB )
+b2Manifold b2CollideCapsules( const b2Capsule* capsuleA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Vec2 origin = capsuleA->center1;
 
@@ -323,7 +326,7 @@ b2Manifold b2CollideCapsules( const b2Capsule* capsuleA, b2Transform xfA, const 
 	float radiusA = capsuleA->radius;
 	float radiusB = capsuleB->radius;
 	float radius = radiusA + radiusB;
-	float maxDistance = radius + B2_SPECULATIVE_DISTANCE;
+	float maxDistance = radius + ( allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f );
 
 	if ( distanceSquared > maxDistance * maxDistance )
 	{
@@ -529,16 +532,16 @@ b2Manifold b2CollideCapsules( const b2Capsule* capsuleA, b2Transform xfA, const 
 	return manifold;
 }
 
-b2Manifold b2CollideSegmentAndCapsule( const b2Segment* segmentA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB )
+b2Manifold b2CollideSegmentAndCapsule( const b2Segment* segmentA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Capsule capsuleA = { segmentA->point1, segmentA->point2, 0.0f };
-	return b2CollideCapsules( &capsuleA, xfA, capsuleB, xfB );
+	return b2CollideCapsules( &capsuleA, xfA, capsuleB, xfB, allowSpeculative );
 }
 
-b2Manifold b2CollidePolygonAndCapsule( const b2Polygon* polygonA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB )
+b2Manifold b2CollidePolygonAndCapsule( const b2Polygon* polygonA, b2Transform xfA, const b2Capsule* capsuleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Polygon polyB = b2MakeCapsule( capsuleB->center1, capsuleB->center2, capsuleB->radius );
-	return b2CollidePolygons( polygonA, xfA, &polyB, xfB );
+	return b2CollidePolygons( polygonA, xfA, &polyB, xfB, allowSpeculative );
 }
 
 // Polygon clipper used to compute contact points when there are potentially two contact points.
@@ -733,11 +736,11 @@ static float b2FindMaxSeparation( int* edgeIndex, const b2Polygon* poly1, const 
 //   clip edges
 // end
 
-b2Manifold b2CollidePolygons( const b2Polygon* polygonA, b2Transform xfA, const b2Polygon* polygonB, b2Transform xfB )
+b2Manifold b2CollidePolygons( const b2Polygon* polygonA, b2Transform xfA, const b2Polygon* polygonB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Vec2 origin = polygonA->vertices[0];
 	float linearSlop = B2_LINEAR_SLOP;
-	float speculativeDistance = B2_SPECULATIVE_DISTANCE;
+	float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
 
 	// Shift polyA to origin
 	// pw = q * pb + p
@@ -1074,20 +1077,20 @@ b2Manifold b2CollidePolygons( const b2Polygon* polygonA, b2Transform xfA, const 
 	return manifold;
 }
 
-b2Manifold b2CollideSegmentAndCircle( const b2Segment* segmentA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB )
+b2Manifold b2CollideSegmentAndCircle( const b2Segment* segmentA, b2Transform xfA, const b2Circle* circleB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Capsule capsuleA = { segmentA->point1, segmentA->point2, 0.0f };
-	return b2CollideCapsuleAndCircle( &capsuleA, xfA, circleB, xfB );
+	return b2CollideCapsuleAndCircle( &capsuleA, xfA, circleB, xfB, allowSpeculative );
 }
 
-b2Manifold b2CollideSegmentAndPolygon( const b2Segment* segmentA, b2Transform xfA, const b2Polygon* polygonB, b2Transform xfB )
+b2Manifold b2CollideSegmentAndPolygon( const b2Segment* segmentA, b2Transform xfA, const b2Polygon* polygonB, b2Transform xfB, bool allowSpeculative )
 {
 	b2Polygon polygonA = b2MakeCapsule( segmentA->point1, segmentA->point2, 0.0f );
-	return b2CollidePolygons( &polygonA, xfA, polygonB, xfB );
+	return b2CollidePolygons( &polygonA, xfA, polygonB, xfB, allowSpeculative );
 }
 
 b2Manifold b2CollideChainSegmentAndCircle( const b2ChainSegment* segmentA, b2Transform xfA, const b2Circle* circleB,
-										   b2Transform xfB )
+										   b2Transform xfB, bool allowSpeculative )
 {
 	b2Manifold manifold = { 0 };
 
@@ -1153,7 +1156,9 @@ b2Manifold b2CollideChainSegmentAndCircle( const b2ChainSegment* segmentA, b2Tra
 
 	float radius = circleB->radius;
 	float separation = distance - radius;
-	if ( separation > B2_SPECULATIVE_DISTANCE )
+
+	float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
+  if ( separation > speculativeDistance )
 	{
 		return manifold;
 	}
@@ -1175,10 +1180,10 @@ b2Manifold b2CollideChainSegmentAndCircle( const b2ChainSegment* segmentA, b2Tra
 }
 
 b2Manifold b2CollideChainSegmentAndCapsule( const b2ChainSegment* segmentA, b2Transform xfA, const b2Capsule* capsuleB,
-											b2Transform xfB, b2SimplexCache* cache )
+											b2Transform xfB, bool allowSpeculative, b2SimplexCache* cache )
 {
 	b2Polygon polyB = b2MakeCapsule( capsuleB->center1, capsuleB->center2, capsuleB->radius );
-	return b2CollideChainSegmentAndPolygon( segmentA, xfA, &polyB, xfB, cache );
+	return b2CollideChainSegmentAndPolygon( segmentA, xfA, &polyB, xfB, allowSpeculative, cache );
 }
 
 static b2Manifold b2ClipSegments( b2Vec2 a1, b2Vec2 a2, b2Vec2 b1, b2Vec2 b2, b2Vec2 normal, float ra, float rb, uint16_t id1,
@@ -1317,7 +1322,7 @@ static enum b2NormalType b2ClassifyNormal( struct b2ChainSegmentParams params, b
 }
 
 b2Manifold b2CollideChainSegmentAndPolygon( const b2ChainSegment* segmentA, b2Transform xfA, const b2Polygon* polygonB,
-											b2Transform xfB, b2SimplexCache* cache )
+											b2Transform xfB, bool allowSpeculative, b2SimplexCache* cache )
 {
 	b2Manifold manifold = { 0 };
 
@@ -1384,7 +1389,8 @@ b2Manifold b2CollideChainSegmentAndPolygon( const b2ChainSegment* segmentA, b2Tr
 
 	b2DistanceOutput output = b2ShapeDistance( &input, cache, NULL, 0 );
 
-	if ( output.distance > radiusB + B2_SPECULATIVE_DISTANCE )
+	float speculativeDistance = allowSpeculative ? B2_SPECULATIVE_DISTANCE : 0.0f;
+	if ( output.distance > radiusB + speculativeDistance )
 	{
 		return manifold;
 	}
