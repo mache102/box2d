@@ -165,6 +165,13 @@ B2_API void b2World_EnableWarmStarting( b2WorldId worldId, bool flag );
 /// Is constraint warm starting enabled?
 B2_API bool b2World_IsWarmStartingEnabled( b2WorldId worldId );
 
+/// Enable/disable velocity transfer from kinematic bodies to this dynamic body.
+/// By default, dynamic bodies accept velocity from kinematic bodies during contacts.
+B2_API void b2Body_EnableKinematicVelocityTransfer( b2BodyId bodyId, bool flag );
+
+/// Is velocity transfer from kinematic bodies enabled for this body?
+B2_API bool b2Body_IsKinematicVelocityTransferEnabled( b2BodyId bodyId );
+
 /// Get the number of awake bodies.
 B2_API int b2World_GetAwakeBodyCount( b2WorldId worldId );
 

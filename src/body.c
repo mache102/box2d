@@ -255,6 +255,8 @@ b2BodyId b2CreateBody( b2WorldId worldId, const b2BodyDef* def )
 	bodySim->flags |= def->isBullet ? b2_isBullet : 0;
 	bodySim->flags |= def->allowFastRotation ? b2_allowFastRotation : 0;
 	bodySim->flags |= def->type == b2_dynamicBody ? b2_dynamicFlag : 0;
+	// Dynamic bodies accept kinematic velocity transfer by default
+	bodySim->flags |= def->type == b2_dynamicBody ? b2_acceptKinematicVelocity : 0;
 
 	if ( setId == b2_awakeSet )
 	{
@@ -1993,4 +1995,46 @@ bool b2ShouldBodiesCollide( b2World* world, b2Body* bodyA, b2Body* bodyB )
 	}
 
 	return true;
+}
+
+void b2Body_EnableKinematicVelocityTransfer( b2BodyId bodyId, bool flag )
+{
+	b2World* world = b2GetWorldLocked( bodyId.world0 );
+	if ( world == NULL )
+	{
+		return;
+	}
+
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+	b2BodySim* bodySim = b2GetBodySim( world, body );
+
+	if ( flag )
+	{
+		body->flags |= b2_acceptKinematicVelocity;
+		bodySim->flags |= b2_acceptKinematicVelocity;
+	}
+	else
+	{
+		body->flags &= ~b2_acceptKinematicVelocity;
+		bodySim->flags &= ~b2_acceptKinematicVelocity;
+	}
+
+	// Update body state flags if awake
+	b2BodyState* bodyState = b2GetBodyState( world, body );
+	if ( bodyState != NULL )
+	{
+		bodyState->flags = bodySim->flags;
+	}
+}
+
+bool b2Body_IsKinematicVelocityTransferEnabled( b2BodyId bodyId )
+{
+	b2World* world = b2GetWorldLocked( bodyId.world0 );
+	if ( world == NULL )
+	{
+		return false;
+	}
+
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+	return ( body->flags & b2_acceptKinematicVelocity ) != 0;
 }

@@ -48,6 +48,9 @@ enum b2BodyFlags
 	// Used for b2BodyState flags.
 	b2_dynamicFlag = 0x00000200,
 
+	// This dynamic body accepts velocity transfer from kinematic bodies
+	b2_acceptKinematicVelocity = 0x00000400,
+
 	// All lock flags
 	b2_allLocks = b2_lockAngularZ | b2_lockLinearX | b2_lockLinearY,
 };

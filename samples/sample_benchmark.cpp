@@ -2587,3 +2587,143 @@ public:
 };
 
 static int benchmarkBoxFillWalls = RegisterSample( "Benchmark", "Box Fill (Walls)", BenchmarkBoxFillWalls::Create );
+
+
+// Test kinematic velocity transfer enable/disable
+class BenchmarkKinematicVelocityTransfer : public Sample
+{
+public:
+	explicit BenchmarkKinematicVelocityTransfer( SampleContext* context )
+		: Sample( context )
+	{
+		if ( m_context->restart == false )
+		{
+			m_context->camera.center = { 1.0f, 3.0f };
+			m_context->camera.zoom = 10.0f;
+		}
+
+		m_context->enableSleep = false;
+		m_applyVelocity = false;
+
+		// Left kinematic box at (0, 0)
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_kinematicBody;
+			bodyDef.position = { 0.0f, 0.0f };
+			m_leftKinematic = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			b2Polygon box = b2MakeBox( 0.5f, 0.5f );
+			b2CreatePolygonShape( m_leftKinematic, &shapeDef, &box );
+		}
+
+		// Right kinematic box at (2, 0)
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_kinematicBody;
+			bodyDef.position = { 2.0f, 0.0f };
+			m_rightKinematic = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			b2Polygon box = b2MakeBox( 0.5f, 0.5f );
+			b2CreatePolygonShape( m_rightKinematic, &shapeDef, &box );
+		}
+
+		// Left dynamic box above left kinematic - DISABLES velocity transfer
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_dynamicBody;
+			bodyDef.position = { 0.0f, 1.5f };
+			m_leftDynamic = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			shapeDef.density = 1.0f;
+			shapeDef.material.customColor = b2_colorRed;
+			b2Polygon box = b2MakeBox( 0.25f, 0.25f );
+			b2CreatePolygonShape( m_leftDynamic, &shapeDef, &box );
+
+			// Disable velocity transfer from kinematic bodies
+			b2Body_EnableKinematicVelocityTransfer( m_leftDynamic, false );
+		}
+
+		// Right dynamic box above right kinematic - KEEPS velocity transfer enabled
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_dynamicBody;
+			bodyDef.position = { 2.0f, 1.5f };
+			m_rightDynamic = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			shapeDef.density = 1.0f;
+			shapeDef.material.customColor = b2_colorGreen;
+			b2Polygon box = b2MakeBox( 0.25f, 0.25f );
+			b2CreatePolygonShape( m_rightDynamic, &shapeDef, &box );
+
+			// Keep default (velocity transfer enabled)
+		}
+	}
+
+	void UpdateGui() override
+	{
+		ImGui::SetNextWindowPos( ImVec2( 10.0f, 100.0f ) );
+		ImGui::SetNextWindowSize( ImVec2( 240.0f, 100.0f ) );
+		ImGui::Begin( "Kinematic Velocity Transfer", nullptr, ImGuiWindowFlags_NoResize );
+
+		if ( ImGui::Button( "Apply Velocity (K)" ) )
+		{
+			m_applyVelocity = true;
+		}
+
+		ImGui::Text( "Red (left): Transfer DISABLED" );
+		ImGui::Text( "Green (right): Transfer ENABLED" );
+
+		ImGui::End();
+	}
+
+	void Keyboard( int key ) override
+	{
+		if ( key == 'K' )
+		{
+			m_applyVelocity = true;
+		}
+	}
+
+	void Step() override
+	{
+		if ( m_applyVelocity )
+		{
+			// Apply upward velocity to both kinematic bodies for one tick
+			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 10.0f } );
+			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 10.0f } );
+			m_applyVelocity = false;
+			m_resetVelocity = true;
+		}
+		else if ( m_resetVelocity )
+		{
+			// Reset velocities after one tick
+			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 0.0f } );
+			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 0.0f } );
+			m_resetVelocity = false;
+		}
+
+		Sample::Step();
+
+		DrawTextLine( "Press [K] to apply velocity to kinematics" );
+		DrawTextLine( "Red box (left): velocity transfer DISABLED" );
+		DrawTextLine( "Green box (right): velocity transfer ENABLED" );
+	}
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new BenchmarkKinematicVelocityTransfer( context );
+	}
+
+	b2BodyId m_leftKinematic;
+	b2BodyId m_rightKinematic;
+	b2BodyId m_leftDynamic;
+	b2BodyId m_rightDynamic;
+	bool m_applyVelocity;
+	bool m_resetVelocity;
+};
+
+static int benchmarkKinematicVelocityTransfer = RegisterSample( "Benchmark", "Kinematic Velocity Transfer", BenchmarkKinematicVelocityTransfer::Create );

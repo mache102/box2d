@@ -33,6 +33,15 @@ Open the "Ground Ghost" benchmark in both applications.
 - The **Standard** build should say: "Disable Dynamic-Static Speculative Collisions: Disabled"
 - The **No-Spec** build should say: "Disable Dynamic-Static Speculative Collisions: Enabled"
 
+## Kinematic Velocity Transfer Control
+
+### API Functions
+Added functions to enable/disable velocity transfer from kinematic bodies to dynamic bodies:
+- `b2Body_EnableKinematicVelocityTransfer(b2BodyId bodyId, bool flag)`
+- `b2Body_IsKinematicVelocityTransferEnabled(b2BodyId bodyId)`
+
+By default, dynamic bodies accept velocity from kinematic bodies during contacts. This can now be disabled per-body.
+
 ## Running Unit Tests (with speculative disabled)
 
 ```bash
