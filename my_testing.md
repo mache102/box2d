@@ -33,22 +33,44 @@ Open the "Ground Ghost" benchmark in both applications.
 - The **Standard** build should say: "Disable Dynamic-Static Speculative Collisions: Disabled"
 - The **No-Spec** build should say: "Disable Dynamic-Static Speculative Collisions: Enabled"
 
-## Kinematic Velocity Transfer Control
 
-### API Functions
-Added functions to enable/disable velocity transfer from kinematic bodies to dynamic bodies:
-- `b2Body_EnableKinematicVelocityTransfer(b2BodyId bodyId, bool flag)`
-- `b2Body_IsKinematicVelocityTransferEnabled(b2BodyId bodyId)`
 
-By default, dynamic bodies accept velocity from kinematic bodies during contacts. This can now be disabled per-body.
+## SetPistonVelocity
+
+let's add a function b2Body_SetPistonVelocity(b2BodyId bodyId, b2Vec2 velocity)
+the function applies the velocity to the body for one tick, and then resets 'piston' velocity to zero.
+
+The function deviates from SetLinearVelocity, such that:
+
+- velocity must be in one of the 4 cardinal directions (+-x, +-y), otherwise ignored  
+- example of ignored velocity: b2Vec2(1, 1), b2Vec2(-1, -1), b2Vec2(0, 0) 
+- example of valid velocity: b2Vec2(1, 0), b2Vec2(-3, 0), b2Vec2(0, 5), b2Vec2(0, -6)
+
+for each dynamic body, M, that would be affected by the piston's movement from (x,y) to (x+v.x, y+v.y):
+- M's position can only be updated along the axis of the piston's movement. i.e. if piston moves in +-x, M's x is updated and y is as is, and vice versa.
+- if the piston moves in +x dir: find largest x such that M 'collides'
+- if the piston moves in -x dir: find smallest x such that M 'collides'
+- if the piston moves in +y dir: find largest y such that M 'collides'
+- if the piston moves in -y dir: find smallest y such that M 'collides' 
+
+
+'collides' definition: M collides with at least one of the shapes that are part of the piston body. 
+most piston bodies only have 1 shape; some have up to 2 shapes. all shapes are either circles or convex polygons with few vertices.
+
+example: a square piston body moves from (3, 0) to (6, 0). if a dynamic body M was at (4.5, 0), then its resulting position would need to be to the right of the piston body, i.e. somewhere at x > 6.
+
+after finding the new position, M is moved to that position. M's velocity should be left unchanged.
+
+
 
 ### Test Sample
 The "Kinematic Velocity Transfer" benchmark demonstrates this feature:
 - Two kinematic boxes (at x=0 and x=2)
 - Two dynamic boxes above them
-- Left dynamic box (red): velocity transfer **disabled**
-- Right dynamic box (green): velocity transfer **enabled** (default)
-- Press **K** to apply upward velocity to both kinematic boxes for one tick
+
+- Press **K** to apply upward velocity to both kinematic boxes for one tick. when done:
+  - Left dynamic box (red): applies piston velocity
+  - Right dynamic box (green): applies linear velocity
 - Observe: the green box jumps (acquires velocity), the red box is pushed up (position correction) but stops immediately when kinematic stops
 
 ## Running Unit Tests (with speculative disabled)
