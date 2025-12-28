@@ -2727,3 +2727,222 @@ public:
 };
 
 static int benchmarkKinematicVelocityTransfer = RegisterSample( "Benchmark", "Kinematic Velocity Transfer", BenchmarkKinematicVelocityTransfer::Create );
+
+// Test piston velocity vs linear velocity
+class BenchmarkPistonVelocity : public Sample
+{
+public:
+	explicit BenchmarkPistonVelocity( SampleContext* context )
+		: Sample( context )
+	{
+		if ( m_context->restart == false )
+		{
+			m_context->camera.center = { 0.0f, 5.0f };
+			m_context->camera.zoom = 25.0f;
+		}
+
+		m_context->enableSleep = false;
+		m_applyVelocity = false;
+		m_resetVelocity = false;
+		m_velocity = 10.0f;
+
+		float xPos = -10.0f;
+		float yBase = 0.0f;
+		float xGap = 4.0f;
+
+		// Directions: +X, -X, +Y, -Y
+		b2Vec2 dirs[] = { { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f } };
+		const char* labels[] = { "+X", "-X", "+Y", "-Y" };
+
+		for ( int i = 0; i < 4; ++i )
+		{
+			CreatePair( xPos, yBase, dirs[i], false, labels[i] );
+			xPos += xGap;
+		}
+
+		// Custom Shape Up
+		CreatePair( xPos, yBase, { 0.0f, 1.0f }, true, "Custom +Y" );
+	}
+
+	void CreatePair( float x, float y, b2Vec2 dir, bool customShape, const char* label )
+	{
+		// Create Piston Case
+		CreateCase( x, y, dir, customShape, true );
+
+		// Create Linear Case
+		CreateCase( x, y + 5.0f, dir, customShape, false );
+	}
+
+	void CreateCase( float x, float y, b2Vec2 dir, bool customShape, bool isPiston )
+	{
+		TestCase t;
+		t.isPiston = isPiston;
+		t.direction = dir;
+
+		// Kinematic Body
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_kinematicBody;
+			bodyDef.position = { x, y };
+			t.kinematicBodyId = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			if ( customShape )
+			{
+				// [-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [0, 0], [-0.5, 0.5]
+				// Split into two convex polygons
+				// Left: (-0.5, -0.5), (0, -0.5), (0, 0), (-0.5, 0.5)
+				{
+					b2Vec2 points[] = { { -0.5f, -0.5f }, { 0.0f, -0.5f }, { 0.0f, 0.0f }, { -0.5f, 0.5f } };
+					b2Hull hull = b2ComputeHull( points, 4 );
+					b2Polygon poly = b2MakePolygon( &hull, 0.0f );
+					b2CreatePolygonShape( t.kinematicBodyId, &shapeDef, &poly );
+				}
+				// Right: (0, -0.5), (0.5, -0.5), (0.5, 0.5), (0, 0)
+				{
+					b2Vec2 points[] = { { 0.0f, -0.5f }, { 0.5f, -0.5f }, { 0.5f, 0.5f }, { 0.0f, 0.0f } };
+					b2Hull hull = b2ComputeHull( points, 4 );
+					b2Polygon poly = b2MakePolygon( &hull, 0.0f );
+					b2CreatePolygonShape( t.kinematicBodyId, &shapeDef, &poly );
+				}
+			}
+			else
+			{
+				b2Polygon box = b2MakeBox( 0.5f, 0.5f );
+				b2CreatePolygonShape( t.kinematicBodyId, &shapeDef, &box );
+			}
+		}
+
+		// Dynamic Body
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.type = b2_dynamicBody;
+
+			// Place dynamic body based on direction so it gets pushed
+			b2Vec2 offset = { 0.0f, 0.0f };
+			if ( dir.x > 0 )
+				offset = { 1.1f, 0.0f }; // Right
+			else if ( dir.x < 0 )
+				offset = { -1.1f, 0.0f }; // Left
+			else if ( dir.y > 0 )
+				offset = { 0.0f, 1.1f }; // Up
+			else if ( dir.y < 0 )
+				offset = { 0.0f, -1.1f }; // Down
+
+			// For custom shape (Up), place ball on top
+			if ( customShape )
+			{
+				offset = { 0.0f, 0.8f }; // On top
+			}
+
+			bodyDef.position = { x + offset.x, y + offset.y };
+			t.dynamicBodyId = b2CreateBody( m_worldId, &bodyDef );
+
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			shapeDef.density = 1.0f;
+			shapeDef.material.customColor = isPiston ? b2_colorRed : b2_colorGreen;
+
+			if ( customShape )
+			{
+				b2Circle circle = { { 0.0f, 0.0f }, 0.25f };
+				b2CreateCircleShape( t.dynamicBodyId, &shapeDef, &circle );
+			}
+			else
+			{
+				b2Polygon box = b2MakeBox( 0.25f, 0.25f );
+				b2CreatePolygonShape( t.dynamicBodyId, &shapeDef, &box );
+			}
+		}
+
+		m_testCases.push_back( t );
+	}
+
+	void UpdateGui() override
+	{
+		ImGui::SetNextWindowPos( ImVec2( 10.0f, 100.0f ) );
+		ImGui::SetNextWindowSize( ImVec2( 240.0f, 150.0f ) );
+		ImGui::Begin( "Piston Velocity", nullptr, ImGuiWindowFlags_NoResize );
+
+		if ( ImGui::Button( "Apply Velocity (K)" ) )
+		{
+			m_applyVelocity = true;
+		}
+
+		ImGui::SliderFloat( "Velocity", &m_velocity, 0.0f, 200.0f, "%.1f" );
+
+		ImGui::Text( "Red: Piston" );
+		ImGui::Text( "Green: Linear" );
+		ImGui::Text( "Top Row: Linear" );
+		ImGui::Text( "Bottom Row: Piston" );
+
+		ImGui::End();
+	}
+
+	void Keyboard( int key ) override
+	{
+		if ( key == 'K' )
+		{
+			m_applyVelocity = true;
+		}
+	}
+
+	void Step() override
+	{
+		if ( m_applyVelocity )
+		{
+			for ( auto& t : m_testCases )
+			{
+				b2Vec2 v = { t.direction.x * m_velocity, t.direction.y * m_velocity };
+				if ( t.isPiston )
+				{
+					b2Body_SetPistonVelocity( t.kinematicBodyId, v );
+				}
+				else
+				{
+					b2Body_SetLinearVelocity( t.kinematicBodyId, v );
+				}
+			}
+			m_applyVelocity = false;
+			m_resetVelocity = true;
+		}
+		else if ( m_resetVelocity )
+		{
+			for ( auto& t : m_testCases )
+			{
+				if ( t.isPiston )
+				{
+					b2Body_SetPistonVelocity( t.kinematicBodyId, b2Vec2_zero );
+				}
+				else
+				{
+					b2Body_SetLinearVelocity( t.kinematicBodyId, b2Vec2_zero );
+				}
+			}
+			m_resetVelocity = false;
+		}
+
+		Sample::Step();
+
+		DrawTextLine( "Press [K] to apply velocity" );
+	}
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new BenchmarkPistonVelocity( context );
+	}
+
+	struct TestCase
+	{
+		b2BodyId kinematicBodyId;
+		b2BodyId dynamicBodyId;
+		b2Vec2 direction;
+		bool isPiston;
+	};
+
+	std::vector<TestCase> m_testCases;
+	bool m_applyVelocity;
+	bool m_resetVelocity;
+	float m_velocity;
+};
+
+static int benchmarkPistonVelocity = RegisterSample( "Benchmark", "Piston Velocity", BenchmarkPistonVelocity::Create );
