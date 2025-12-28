@@ -65,7 +65,9 @@ to ensure the implementation reuses existing code and is simple as possible, do 
 - find and reuse existing code that checks if a dynamic body would be affected by large movements between ticks (i.e. CCD)  
 - implement a strictly 1D (single axis) solver for where dynamic body M would end up after being pushed by the piston
 
+### How it was added
 
+1. added SIMD for b2AndW, b2AndNotW, b2NotW, b2HasFlagW, for: AVX2, NEON, SSE2, C
 
 ### Test Sample
 The "Kinematic Velocity Transfer" benchmark demonstrates this feature:
