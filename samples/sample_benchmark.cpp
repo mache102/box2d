@@ -2954,7 +2954,7 @@ public:
 			{
 				if ( m_isPiston )
 				{
-					b2Body_SetPistonVelocity( t.kinematicBodyId, b2Vec2_zero );
+					b2Body_SetLinearVelocity( t.kinematicBodyId, b2Vec2_zero );
 				}
 				else
 				{
