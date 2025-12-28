@@ -809,6 +809,11 @@ void b2Body_SetLinearVelocity( b2BodyId bodyId, b2Vec2 linearVelocity )
 		return;
 	}
 
+	// Clear piston flag
+	body->flags &= ~b2_pistonBehavior;
+	b2BodySim* sim = b2GetBodySim( world, body );
+	sim->flags &= ~b2_pistonBehavior;
+
 	if ( b2LengthSquared( linearVelocity ) > 0.0f )
 	{
 		b2WakeBody( world, body );
@@ -821,6 +826,41 @@ void b2Body_SetLinearVelocity( b2BodyId bodyId, b2Vec2 linearVelocity )
 	}
 
 	state->linearVelocity = linearVelocity;
+	state->flags &= ~b2_pistonBehavior;
+}
+
+void b2Body_SetPistonVelocity( b2BodyId bodyId, b2Vec2 velocity )
+{
+	// Velocity must be axis aligned
+	if ( velocity.x != 0.0f && velocity.y != 0.0f )
+	{
+		return;
+	}
+
+	b2World* world = b2GetWorld( bodyId.world0 );
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+
+	if ( body->type != b2_kinematicBody )
+	{
+		return;
+	}
+
+	b2WakeBody( world, body );
+
+	// Set flag on body
+	body->flags |= b2_pistonBehavior;
+
+	// Set flag on sim if awake
+	b2BodySim* sim = b2GetBodySim( world, body );
+	sim->flags |= b2_pistonBehavior;
+
+	// Set velocity on state if awake
+	b2BodyState* state = b2GetBodyState( world, body );
+	if ( state != NULL )
+	{
+		state->linearVelocity = velocity;
+		state->flags |= b2_pistonBehavior;
+	}
 }
 
 void b2Body_SetAngularVelocity( b2BodyId bodyId, float angularVelocity )

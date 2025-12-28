@@ -2693,15 +2693,15 @@ public:
 		if ( m_applyVelocity )
 		{
 			// Apply upward velocity to both kinematic bodies for one tick
-			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 50.0f } );
-			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 50.0f } );
+			b2Body_SetPistonVelocity( m_leftKinematic, { 0.0f, 100.0f } );
+			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 100.0f } );
 			m_applyVelocity = false;
 			m_resetVelocity = true;
 		}
 		else if ( m_resetVelocity )
 		{
 			// Reset velocities after one tick
-			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 0.0f } );
+			b2Body_SetPistonVelocity( m_leftKinematic, { 0.0f, 0.0f } );
 			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 0.0f } );
 			m_resetVelocity = false;
 		}
@@ -2709,8 +2709,8 @@ public:
 		Sample::Step();
 
 		DrawTextLine( "Press [K] to apply velocity to kinematics" );
-		DrawTextLine( "Red box (left): velocity transfer DISABLED" );
-		DrawTextLine( "Green box (right): velocity transfer ENABLED" );
+		DrawTextLine( "Red box (left): Piston velocity" );
+		DrawTextLine( "Green box (right): Linear velocity" );
 	}
 
 	static Sample* Create( SampleContext* context )

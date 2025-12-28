@@ -664,6 +664,33 @@ static inline b2FloatW b2BlendW( b2FloatW a, b2FloatW b, b2FloatW mask )
 	return _mm256_blendv_ps( a, b, mask );
 }
 
+static inline b2FloatW b2AndW( b2FloatW a, b2FloatW b )
+{
+	return _mm256_and_ps( a, b );
+}
+
+static inline b2FloatW b2AndNotW( b2FloatW a, b2FloatW b )
+{
+	return _mm256_andnot_ps( a, b );
+}
+
+static inline b2FloatW b2NotW( b2FloatW a )
+{
+	__m256i allOnes = _mm256_set1_epi32( -1 );
+	return _mm256_xor_ps( a, _mm256_castsi256_ps( allOnes ) );
+}
+
+static inline b2FloatW b2HasFlagW( b2FloatW flags, uint32_t flag )
+{
+	__m256i flagVec = _mm256_set1_epi32( flag );
+	__m256i flagsInt = _mm256_castps_si256( flags );
+	__m256i andRes = _mm256_and_si256( flagsInt, flagVec );
+	__m256i zero = _mm256_setzero_si256();
+	__m256i eqZero = _mm256_cmpeq_epi32( andRes, zero );
+	__m256i allOnes = _mm256_set1_epi32( -1 );
+	return _mm256_castsi256_ps( _mm256_xor_si256( eqZero, allOnes ) );
+}
+
 #elif defined( B2_SIMD_NEON )
 
 static inline b2FloatW b2ZeroW( void )
@@ -763,6 +790,53 @@ static inline b2FloatW b2BlendW( b2FloatW a, b2FloatW b, b2FloatW mask )
 {
 	uint32x4_t mask32 = vreinterpretq_u32_f32( mask );
 	return vbslq_f32( mask32, b, a );
+}
+
+static inline b2FloatW b2AndW( b2FloatW a, b2FloatW b )
+{
+	return vreinterpretq_f32_u32( vandq_u32( vreinterpretq_u32_f32( a ), vreinterpretq_u32_f32( b ) ) );
+}
+
+static inline b2FloatW b2AndNotW( b2FloatW a, b2FloatW b )
+{
+	return vreinterpretq_f32_u32( vbicq_u32( vreinterpretq_u32_f32( a ), vreinterpretq_u32_f32( b ) ) );
+}
+
+static inline b2FloatW b2NotW( b2FloatW a )
+{
+	return vreinterpretq_f32_u32( vmvnq_u32( vreinterpretq_u32_f32( a ) ) );
+}
+
+static inline bool b2HasFlagW( b2FloatW flags, int flag )
+{
+	b2FloatW mask = b2SplatW( (float)flag );
+	b2FloatW result = b2AndW( flags, mask );
+	return !b2AllZeroW( result );
+}
+
+static inline b2FloatW b2AndW( b2FloatW a, b2FloatW b )
+{
+	return vreinterpretq_f32_u32( vandq_u32( vreinterpretq_u32_f32( a ), vreinterpretq_u32_f32( b ) ) );
+}
+
+static inline b2FloatW b2AndNotW( b2FloatW a, b2FloatW b )
+{
+	return vreinterpretq_f32_u32( vbicq_u32( vreinterpretq_u32_f32( b ), vreinterpretq_u32_f32( a ) ) );
+}
+
+static inline b2FloatW b2NotW( b2FloatW a )
+{
+	return vreinterpretq_f32_u32( vmvnq_u32( vreinterpretq_u32_f32( a ) ) );
+}
+
+static inline b2FloatW b2HasFlagW( b2FloatW flags, uint32_t flag )
+{
+	uint32x4_t flagVec = vdupq_n_u32( flag );
+	uint32x4_t flagsInt = vreinterpretq_u32_f32( flags );
+	uint32x4_t andRes = vandq_u32( flagsInt, flagVec );
+	uint32x4_t zero = vdupq_n_u32( 0 );
+	uint32x4_t eqZero = vceqq_u32( andRes, zero );
+	return vreinterpretq_f32_u32( vmvnq_u32( eqZero ) );
 }
 
 static inline b2FloatW b2LoadW( const float32_t* data )
@@ -897,6 +971,33 @@ static inline b2FloatW b2BlendW( b2FloatW a, b2FloatW b, b2FloatW mask )
 	return _mm_or_ps( _mm_and_ps( mask, b ), _mm_andnot_ps( mask, a ) );
 }
 
+static inline b2FloatW b2AndW( b2FloatW a, b2FloatW b )
+{
+	return _mm_and_ps( a, b );
+}
+
+static inline b2FloatW b2AndNotW( b2FloatW a, b2FloatW b )
+{
+	return _mm_andnot_ps( a, b );
+}
+
+static inline b2FloatW b2NotW( b2FloatW a )
+{
+	__m128i allOnes = _mm_set1_epi32( -1 );
+	return _mm_xor_ps( a, _mm_castsi128_ps( allOnes ) );
+}
+
+static inline b2FloatW b2HasFlagW( b2FloatW flags, uint32_t flag )
+{
+	__m128i flagVec = _mm_set1_epi32( flag );
+	__m128i flagsInt = _mm_castps_si128( flags );
+	__m128i andRes = _mm_and_si128( flagsInt, flagVec );
+	__m128i zero = _mm_setzero_si128();
+	__m128i eqZero = _mm_cmpeq_epi32( andRes, zero );
+	__m128i allOnes = _mm_set1_epi32( -1 );
+	return _mm_castsi128_ps( _mm_xor_si128( eqZero, allOnes ) );
+}
+
 static inline b2FloatW b2LoadW( const float* data )
 {
 	return _mm_load_ps( data );
@@ -1028,6 +1129,56 @@ static inline b2FloatW b2BlendW( b2FloatW a, b2FloatW b, b2FloatW mask )
 	r.y = mask.y != 0.0f ? b.y : a.y;
 	r.z = mask.z != 0.0f ? b.z : a.z;
 	r.w = mask.w != 0.0f ? b.w : a.w;
+	return r;
+}
+
+static inline b2FloatW b2AndW( b2FloatW a, b2FloatW b )
+{
+	b2FloatW r;
+	uint32_t* ua = (uint32_t*)&a;
+	uint32_t* ub = (uint32_t*)&b;
+	uint32_t* ur = (uint32_t*)&r;
+	ur[0] = ua[0] & ub[0];
+	ur[1] = ua[1] & ub[1];
+	ur[2] = ua[2] & ub[2];
+	ur[3] = ua[3] & ub[3];
+	return r;
+}
+
+static inline b2FloatW b2AndNotW( b2FloatW a, b2FloatW b )
+{
+	b2FloatW r;
+	uint32_t* ua = (uint32_t*)&a;
+	uint32_t* ub = (uint32_t*)&b;
+	uint32_t* ur = (uint32_t*)&r;
+	ur[0] = (~ua[0]) & ub[0];
+	ur[1] = (~ua[1]) & ub[1];
+	ur[2] = (~ua[2]) & ub[2];
+	ur[3] = (~ua[3]) & ub[3];
+	return r;
+}
+
+static inline b2FloatW b2NotW( b2FloatW a )
+{
+	b2FloatW r;
+	uint32_t* ua = (uint32_t*)&a;
+	uint32_t* ur = (uint32_t*)&r;
+	ur[0] = ~ua[0];
+	ur[1] = ~ua[1];
+	ur[2] = ~ua[2];
+	ur[3] = ~ua[3];
+	return r;
+}
+
+static inline b2FloatW b2HasFlagW( b2FloatW flags, uint32_t flag )
+{
+	b2FloatW r;
+	uint32_t* uf = (uint32_t*)&flags;
+	uint32_t* ur = (uint32_t*)&r;
+	ur[0] = (uf[0] & flag) ? 0xFFFFFFFF : 0;
+	ur[1] = (uf[1] & flag) ? 0xFFFFFFFF : 0;
+	ur[2] = (uf[2] & flag) ? 0xFFFFFFFF : 0;
+	ur[3] = (uf[3] & flag) ? 0xFFFFFFFF : 0;
 	return r;
 }
 
@@ -1270,6 +1421,8 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 	// transpose
 	float32x4x2_t r1 = vtrnq_f32( simdBody->v.X, simdBody->v.Y );
 	float32x4x2_t r2 = vtrnq_f32( simdBody->w, simdBody->flags );
+	float32x4x2_t r3 = vtrnq_f32( simdBody->dp.X, simdBody->dp.Y );
+	float32x4x2_t r4 = vtrnq_f32( simdBody->dq.C, simdBody->dq.S );
 
 	// I don't use any dummy body in the body array because this will lead to multithreaded sharing and the
 	// associated cache flushing.
@@ -1277,24 +1430,32 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 	{
 		float32x4_t body1 = vcombine_f32( vget_low_f32( r1.val[0] ), vget_low_f32( r2.val[0] ) );
 		b2StoreW( (float*)( states + indices[0] ), body1 );
+		float32x4_t body1b = vcombine_f32( vget_low_f32( r3.val[0] ), vget_low_f32( r4.val[0] ) );
+		b2StoreW( (float*)( states + indices[0] ) + 4, body1b );
 	}
 
 	if ( indices[1] != B2_NULL_INDEX && ( states[indices[1]].flags & b2_dynamicFlag ) != 0 )
 	{
 		float32x4_t body2 = vcombine_f32( vget_low_f32( r1.val[1] ), vget_low_f32( r2.val[1] ) );
 		b2StoreW( (float*)( states + indices[1] ), body2 );
+		float32x4_t body2b = vcombine_f32( vget_low_f32( r3.val[1] ), vget_low_f32( r4.val[1] ) );
+		b2StoreW( (float*)( states + indices[1] ) + 4, body2b );
 	}
 
 	if ( indices[2] != B2_NULL_INDEX && ( states[indices[2]].flags & b2_dynamicFlag ) != 0 )
 	{
 		float32x4_t body3 = vcombine_f32( vget_high_f32( r1.val[0] ), vget_high_f32( r2.val[0] ) );
 		b2StoreW( (float*)( states + indices[2] ), body3 );
+		float32x4_t body3b = vcombine_f32( vget_high_f32( r3.val[0] ), vget_high_f32( r4.val[0] ) );
+		b2StoreW( (float*)( states + indices[2] ) + 4, body3b );
 	}
 
 	if ( indices[3] != B2_NULL_INDEX && ( states[indices[3]].flags & b2_dynamicFlag ) != 0 )
 	{
 		float32x4_t body4 = vcombine_f32( vget_high_f32( r1.val[1] ), vget_high_f32( r2.val[1] ) );
 		b2StoreW( (float*)( states + indices[3] ), body4 );
+		float32x4_t body4b = vcombine_f32( vget_high_f32( r3.val[1] ), vget_high_f32( r4.val[1] ) );
+		b2StoreW( (float*)( states + indices[3] ) + 4, body4b );
 	}
 }
 
@@ -1367,6 +1528,15 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 	// [w3 f3 w4 f4]
 	b2FloatW t4 = b2UnpackHiW( simdBody->w, simdBody->flags );
 
+	// [dpx1 dpy1 dpx2 dpy2]
+	b2FloatW t1b = b2UnpackLoW( simdBody->dp.X, simdBody->dp.Y );
+	// [dpx3 dpy3 dpx4 dpy4]
+	b2FloatW t2b = b2UnpackHiW( simdBody->dp.X, simdBody->dp.Y );
+	// [dqc1 dqs1 dqc2 dqs2]
+	b2FloatW t3b = b2UnpackLoW( simdBody->dq.C, simdBody->dq.S );
+	// [dqc3 dqs3 dqc4 dqs4]
+	b2FloatW t4b = b2UnpackHiW( simdBody->dq.C, simdBody->dq.S );
+
 #if 1
 
 	// I don't use any dummy body in the body array because this will lead to multithreaded cache coherence problems.
@@ -1374,24 +1544,28 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 	{
 		// [t1.x t1.y t3.x t3.y]
 		b2StoreW( (float*)( states + indices[0] ), _mm_shuffle_ps( t1, t3, _MM_SHUFFLE( 1, 0, 1, 0 ) ) );
+		b2StoreW( (float*)( states + indices[0] ) + 4, _mm_shuffle_ps( t1b, t3b, _MM_SHUFFLE( 1, 0, 1, 0 ) ) );
 	}
 
 	if ( indices[1] != B2_NULL_INDEX && ( states[indices[1]].flags & b2_dynamicFlag ) != 0 )
 	{
 		// [t1.z t1.w t3.z t3.w]
 		b2StoreW( (float*)( states + indices[1] ), _mm_shuffle_ps( t1, t3, _MM_SHUFFLE( 3, 2, 3, 2 ) ) );
+		b2StoreW( (float*)( states + indices[1] ) + 4, _mm_shuffle_ps( t1b, t3b, _MM_SHUFFLE( 3, 2, 3, 2 ) ) );
 	}
 
 	if ( indices[2] != B2_NULL_INDEX && ( states[indices[2]].flags & b2_dynamicFlag ) != 0 )
 	{
 		// [t2.x t2.y t4.x t4.y]
 		b2StoreW( (float*)( states + indices[2] ), _mm_shuffle_ps( t2, t4, _MM_SHUFFLE( 1, 0, 1, 0 ) ) );
+		b2StoreW( (float*)( states + indices[2] ) + 4, _mm_shuffle_ps( t2b, t4b, _MM_SHUFFLE( 1, 0, 1, 0 ) ) );
 	}
 
 	if ( indices[3] != B2_NULL_INDEX && ( states[indices[3]].flags & b2_dynamicFlag ) != 0 )
 	{
 		// [t2.z t2.w t4.z t4.w]
 		b2StoreW( (float*)( states + indices[3] ), _mm_shuffle_ps( t2, t4, _MM_SHUFFLE( 3, 2, 3, 2 ) ) );
+		b2StoreW( (float*)( states + indices[3] ) + 4, _mm_shuffle_ps( t2b, t4b, _MM_SHUFFLE( 3, 2, 3, 2 ) ) );
 	}
 
 #else
@@ -1459,6 +1633,8 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 		state->linearVelocity.x = simdBody->v.X.x;
 		state->linearVelocity.y = simdBody->v.Y.x;
 		state->angularVelocity = simdBody->w.x;
+		state->deltaPosition.x = simdBody->dp.X.x;
+		state->deltaPosition.y = simdBody->dp.Y.x;
 	}
 
 	if ( indices[1] != B2_NULL_INDEX && ( states[indices[1]].flags & b2_dynamicFlag ) != 0 )
@@ -1467,6 +1643,8 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 		state->linearVelocity.x = simdBody->v.X.y;
 		state->linearVelocity.y = simdBody->v.Y.y;
 		state->angularVelocity = simdBody->w.y;
+		state->deltaPosition.x = simdBody->dp.X.y;
+		state->deltaPosition.y = simdBody->dp.Y.y;
 	}
 
 	if ( indices[2] != B2_NULL_INDEX && ( states[indices[2]].flags & b2_dynamicFlag ) != 0 )
@@ -1475,6 +1653,8 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 		state->linearVelocity.x = simdBody->v.X.z;
 		state->linearVelocity.y = simdBody->v.Y.z;
 		state->angularVelocity = simdBody->w.z;
+		state->deltaPosition.x = simdBody->dp.X.z;
+		state->deltaPosition.y = simdBody->dp.Y.z;
 	}
 
 	if ( indices[3] != B2_NULL_INDEX && ( states[indices[3]].flags & b2_dynamicFlag ) != 0 )
@@ -1483,6 +1663,8 @@ static void b2ScatterBodies( b2BodyState* B2_RESTRICT states, int* B2_RESTRICT i
 		state->linearVelocity.x = simdBody->v.X.w;
 		state->linearVelocity.y = simdBody->v.Y.w;
 		state->angularVelocity = simdBody->w.w;
+		state->deltaPosition.x = simdBody->dp.X.w;
+		state->deltaPosition.y = simdBody->dp.Y.w;
 	}
 }
 
@@ -1816,6 +1998,11 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 		b2BodyStateW bA = b2GatherBodies( states, c->indexA );
 		b2BodyStateW bB = b2GatherBodies( states, c->indexB );
 
+		b2FloatW isPistonA = b2HasFlagW( bA.flags, b2_pistonBehavior );
+		b2FloatW isPistonB = b2HasFlagW( bB.flags, b2_pistonBehavior );
+		b2FloatW isPiston = b2OrW( isPistonA, isPistonB );
+		b2FloatW notPiston = b2NotW( isPiston );
+
 		b2FloatW biasRate, massScale, impulseScale;
 		if ( useBias )
 		{
@@ -1849,6 +2036,27 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 			b2Vec2W ds = { b2AddW( dp.X, b2SubW( rsB.X, rsA.X ) ), b2AddW( dp.Y, b2SubW( rsB.Y, rsA.Y ) ) };
 			b2FloatW s = b2AddW( b2DotW( c->normal, ds ), c->baseSeparation1 );
 
+			// Piston logic: push bodies directly
+			{
+				b2FloatW pushMask = b2AndW( isPiston, b2GreaterThanW( b2ZeroW(), s ) ); // s < 0
+				if ( !b2AllZeroW( pushMask ) )
+				{
+					b2FloatW pushAmt = b2SubW( b2ZeroW(), s );
+					b2FloatW pushX = b2MulW( pushAmt, c->normal.X );
+					b2FloatW pushY = b2MulW( pushAmt, c->normal.Y );
+
+					// If A is piston, push B
+					b2FloatW pushB = b2AndW( pushMask, isPistonA );
+					bB.dp.X = b2BlendW( bB.dp.X, b2AddW( bB.dp.X, pushX ), pushB );
+					bB.dp.Y = b2BlendW( bB.dp.Y, b2AddW( bB.dp.Y, pushY ), pushB );
+
+					// If B is piston, push A (opposite direction)
+					b2FloatW pushA = b2AndW( pushMask, isPistonB );
+					bA.dp.X = b2BlendW( bA.dp.X, b2SubW( bA.dp.X, pushX ), pushA );
+					bA.dp.Y = b2BlendW( bA.dp.Y, b2SubW( bA.dp.Y, pushY ), pushA );
+				}
+			}
+
 			// Apply speculative bias if separation is greater than zero, otherwise apply soft constraint bias
 			// The contactSpeed is meant to limit stiffness, not increase it.
 			b2FloatW mask = b2GreaterThanW( s, b2ZeroW() );
@@ -1860,6 +2068,11 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 
 			b2FloatW pointMassScale = b2BlendW( massScale, oneW, mask );
 			b2FloatW pointImpulseScale = b2BlendW( impulseScale, b2ZeroW(), mask );
+
+			// Disable velocity impulses for piston
+			pointMassScale = b2AndW( pointMassScale, notPiston );
+			pointImpulseScale = b2AndW( pointImpulseScale, notPiston );
+			bias = b2AndW( bias, notPiston );
 
 			// Relative velocity at contact
 			b2FloatW dvx = b2SubW( b2SubW( bB.v.X, b2MulW( bB.w, rB.Y ) ), b2SubW( bA.v.X, b2MulW( bA.w, rA.Y ) ) );
@@ -1901,6 +2114,27 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 			b2Vec2W ds = { b2AddW( dp.X, b2SubW( rsB.X, rsA.X ) ), b2AddW( dp.Y, b2SubW( rsB.Y, rsA.Y ) ) };
 			b2FloatW s = b2AddW( b2DotW( c->normal, ds ), c->baseSeparation2 );
 
+			// Piston logic: push bodies directly
+			{
+				b2FloatW pushMask = b2AndW( isPiston, b2GreaterThanW( b2ZeroW(), s ) ); // s < 0
+				if ( !b2AllZeroW( pushMask ) )
+				{
+					b2FloatW pushAmt = b2SubW( b2ZeroW(), s );
+					b2FloatW pushX = b2MulW( pushAmt, c->normal.X );
+					b2FloatW pushY = b2MulW( pushAmt, c->normal.Y );
+
+					// If A is piston, push B
+					b2FloatW pushB = b2AndW( pushMask, isPistonA );
+					bB.dp.X = b2BlendW( bB.dp.X, b2AddW( bB.dp.X, pushX ), pushB );
+					bB.dp.Y = b2BlendW( bB.dp.Y, b2AddW( bB.dp.Y, pushY ), pushB );
+
+					// If B is piston, push A (opposite direction)
+					b2FloatW pushA = b2AndW( pushMask, isPistonB );
+					bA.dp.X = b2BlendW( bA.dp.X, b2SubW( bA.dp.X, pushX ), pushA );
+					bA.dp.Y = b2BlendW( bA.dp.Y, b2SubW( bA.dp.Y, pushY ), pushA );
+				}
+			}
+
 			b2FloatW mask = b2GreaterThanW( s, b2ZeroW() );
 			b2FloatW specBias = b2MulW( s, inv_h );
 			b2FloatW softBias = b2MaxW( b2MulW( biasRate, s ), contactSpeed );
@@ -1908,6 +2142,11 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 
 			b2FloatW pointMassScale = b2BlendW( massScale, oneW, mask );
 			b2FloatW pointImpulseScale = b2BlendW( impulseScale, b2ZeroW(), mask );
+
+			// Disable velocity impulses for piston
+			pointMassScale = b2AndW( pointMassScale, notPiston );
+			pointImpulseScale = b2AndW( pointImpulseScale, notPiston );
+			bias = b2AndW( bias, notPiston );
 
 			// fixed anchors for Jacobians
 			b2Vec2W rA = c->anchorA2;
@@ -1962,6 +2201,7 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 
 			// Compute tangent force
 			b2FloatW negImpulse = b2MulW( c->tangentMass1, vt );
+			negImpulse = b2AndW( negImpulse, notPiston ); // Disable friction for piston
 
 			// Clamp the accumulated force
 			b2FloatW maxFriction = b2MulW( c->friction, c->normalImpulse1 );
@@ -1999,6 +2239,7 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 
 			// Compute tangent force
 			b2FloatW negImpulse = b2MulW( c->tangentMass2, vt );
+			negImpulse = b2AndW( negImpulse, notPiston ); // Disable friction for piston
 
 			// Clamp the accumulated force
 			b2FloatW maxFriction = b2MulW( c->friction, c->normalImpulse2 );

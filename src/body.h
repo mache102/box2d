@@ -51,6 +51,9 @@ enum b2BodyFlags
 	// This dynamic body accepts velocity transfer from kinematic bodies
 	b2_acceptKinematicVelocity = 0x00000400,
 
+	// This body acts as a piston (moves bodies without transferring velocity)
+	b2_pistonBehavior = 0x00000800,
+
 	// All lock flags
 	b2_allLocks = b2_lockAngularZ | b2_lockLinearX | b2_lockLinearY,
 };

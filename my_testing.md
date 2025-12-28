@@ -61,6 +61,10 @@ example: a square piston body moves from (3, 0) to (6, 0). if a dynamic body M w
 
 after finding the new position, M is moved to that position. M's velocity should be left unchanged.
 
+to ensure the implementation reuses existing code and is simple as possible, do the following:
+- find and reuse existing code that checks if a dynamic body would be affected by large movements between ticks (i.e. CCD)  
+- implement a strictly 1D (single axis) solver for where dynamic body M would end up after being pushed by the piston
+
 
 
 ### Test Sample

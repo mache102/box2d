@@ -281,6 +281,12 @@ B2_API float b2Body_GetAngularVelocity( b2BodyId bodyId );
 /// Set the linear velocity of a body. Usually in meters per second.
 B2_API void b2Body_SetLinearVelocity( b2BodyId bodyId, b2Vec2 linearVelocity );
 
+/// Set the piston velocity of a body. Usually in meters per second.
+/// The velocity must be axis aligned (x or y).
+/// This velocity is applied for one time step and then reset to zero.
+/// Dynamic bodies touching the piston will be pushed but will not acquire the velocity.
+B2_API void b2Body_SetPistonVelocity( b2BodyId bodyId, b2Vec2 velocity );
+
 /// Set the angular velocity of a body in radians per second
 B2_API void b2Body_SetAngularVelocity( b2BodyId bodyId, float angularVelocity );
 
