@@ -2693,8 +2693,8 @@ public:
 		if ( m_applyVelocity )
 		{
 			// Apply upward velocity to both kinematic bodies for one tick
-			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 10.0f } );
-			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 10.0f } );
+			b2Body_SetLinearVelocity( m_leftKinematic, { 0.0f, 50.0f } );
+			b2Body_SetLinearVelocity( m_rightKinematic, { 0.0f, 50.0f } );
 			m_applyVelocity = false;
 			m_resetVelocity = true;
 		}

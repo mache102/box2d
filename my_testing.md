@@ -42,6 +42,15 @@ Added functions to enable/disable velocity transfer from kinematic bodies to dyn
 
 By default, dynamic bodies accept velocity from kinematic bodies during contacts. This can now be disabled per-body.
 
+### Test Sample
+The "Kinematic Velocity Transfer" benchmark demonstrates this feature:
+- Two kinematic boxes (at x=0 and x=2)
+- Two dynamic boxes above them
+- Left dynamic box (red): velocity transfer **disabled**
+- Right dynamic box (green): velocity transfer **enabled** (default)
+- Press **K** to apply upward velocity to both kinematic boxes for one tick
+- Observe: the green box jumps (acquires velocity), the red box is pushed up (position correction) but stops immediately when kinematic stops
+
 ## Running Unit Tests (with speculative disabled)
 
 ```bash
