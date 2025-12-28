@@ -2744,11 +2744,12 @@ public:
 		m_context->enableSleep = false;
 		m_applyVelocity = false;
 		m_resetVelocity = false;
-		m_velocity = 10.0f;
+		m_velocity = 50.0f;
+		m_isPiston = true;
 
 		float xPos = -10.0f;
 		float yBase = 0.0f;
-		float xGap = 4.0f;
+		float xGap = 5.0f;
 
 		// Directions: +X, -X, +Y, -Y
 		b2Vec2 dirs[] = { { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f } };
@@ -2762,22 +2763,48 @@ public:
 
 		// Custom Shape Up
 		CreatePair( xPos, yBase, { 0.0f, 1.0f }, true, "Custom +Y" );
+
+		// Floors
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			bodyDef.position = { -10.0f, -0.5f }; // Piston Row Floor
+			b2BodyId groundId = b2CreateBody( m_worldId, &bodyDef );
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+			b2Polygon box = b2MakeBox( 5.0f, 0.25f );
+			b2CreatePolygonShape( groundId, &shapeDef, &box );
+		}
+
+		// Walls and Ceiling
+		{
+			b2BodyDef bodyDef = b2DefaultBodyDef();
+			b2BodyId groundId = b2CreateBody( m_worldId, &bodyDef );
+			b2ShapeDef shapeDef = b2DefaultShapeDef();
+
+			// Left Wall
+			b2Polygon left = b2MakeOffsetBox( 0.5f, 20.0f, { -15.0f, 10.0f }, b2Rot_identity );
+			b2CreatePolygonShape( groundId, &shapeDef, &left );
+
+			// Right Wall
+			b2Polygon right = b2MakeOffsetBox( 0.5f, 20.0f, { 11.0f, 10.0f }, b2Rot_identity );
+			b2CreatePolygonShape( groundId, &shapeDef, &right );
+
+			// Ceiling
+			b2Polygon top = b2MakeOffsetBox( 20.0f, 0.5f, { -2.0f, 25.0f }, b2Rot_identity );
+			b2CreatePolygonShape( groundId, &shapeDef, &top );
+		}
 	}
 
 	void CreatePair( float x, float y, b2Vec2 dir, bool customShape, const char* label )
 	{
 		// Create Piston Case
-		CreateCase( x, y, dir, customShape, true );
-
-		// Create Linear Case
-		CreateCase( x, y + 5.0f, dir, customShape, false );
+		CreateCase( x, y, dir, customShape );
 	}
 
-	void CreateCase( float x, float y, b2Vec2 dir, bool customShape, bool isPiston )
+	void CreateCase( float x, float y, b2Vec2 dir, bool customShape )
 	{
 		TestCase t;
-		t.isPiston = isPiston;
 		t.direction = dir;
+		t.invertGravity = ( dir.y < 0.0f );
 
 		// Kinematic Body
 		{
@@ -2840,7 +2867,7 @@ public:
 
 			b2ShapeDef shapeDef = b2DefaultShapeDef();
 			shapeDef.density = 1.0f;
-			shapeDef.material.customColor = isPiston ? b2_colorRed : b2_colorGreen;
+			shapeDef.material.customColor = b2_colorRed;
 
 			if ( customShape )
 			{
@@ -2868,6 +2895,9 @@ public:
 			m_applyVelocity = true;
 		}
 
+		/* checkbox for isPiston*/
+		ImGui::Checkbox( "Is Piston", &m_isPiston );
+
 		ImGui::SliderFloat( "Velocity", &m_velocity, 0.0f, 200.0f, "%.1f" );
 
 		ImGui::Text( "Red: Piston" );
@@ -2888,12 +2918,25 @@ public:
 
 	void Step() override
 	{
+		b2Vec2 gravity = b2World_GetGravity( m_worldId );
+
+		for ( auto& t : m_testCases )
+		{
+			if ( t.invertGravity )
+			{
+				float mass = b2Body_GetMass( t.dynamicBodyId );
+				// Apply force to invert gravity: F = -2 * m * g
+				b2Vec2 force = { -2.0f * mass * gravity.x, -2.0f * mass * gravity.y };
+				b2Body_ApplyForceToCenter( t.dynamicBodyId, force, true );
+			}
+		}
+
 		if ( m_applyVelocity )
 		{
 			for ( auto& t : m_testCases )
 			{
 				b2Vec2 v = { t.direction.x * m_velocity, t.direction.y * m_velocity };
-				if ( t.isPiston )
+				if ( m_isPiston )
 				{
 					b2Body_SetPistonVelocity( t.kinematicBodyId, v );
 				}
@@ -2909,7 +2952,7 @@ public:
 		{
 			for ( auto& t : m_testCases )
 			{
-				if ( t.isPiston )
+				if ( m_isPiston )
 				{
 					b2Body_SetPistonVelocity( t.kinematicBodyId, b2Vec2_zero );
 				}
@@ -2936,13 +2979,14 @@ public:
 		b2BodyId kinematicBodyId;
 		b2BodyId dynamicBodyId;
 		b2Vec2 direction;
-		bool isPiston;
+		bool invertGravity;
 	};
 
 	std::vector<TestCase> m_testCases;
 	bool m_applyVelocity;
 	bool m_resetVelocity;
 	float m_velocity;
+	bool m_isPiston;
 };
 
 static int benchmarkPistonVelocity = RegisterSample( "Benchmark", "Piston Velocity", BenchmarkPistonVelocity::Create );
