@@ -2945,6 +2945,16 @@ public:
 					b2Body_SetLinearVelocity( t.kinematicBodyId, v );
 				}
 			}
+
+			if ( !m_testCases.empty() )
+			{
+				b2BodyId id = m_testCases[0].kinematicBodyId;
+				bool isPiston = b2Body_IsPiston( id );
+				b2Vec2 linVel = b2Body_GetLinearVelocity( id );
+				float angVel = b2Body_GetAngularVelocity( id );
+				// b2Log( "Body 0: IsPiston=%s, LinVel=(%.2f, %.2f), AngVel=%.2f\n", isPiston ? "true" : "false", linVel.x, linVel.y, angVel );
+			}
+
 			m_applyVelocity = false;
 			m_resetVelocity = true;
 		}
