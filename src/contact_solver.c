@@ -2038,6 +2038,7 @@ void b2SolveContactsTask( int startIndex, int endIndex, b2StepContext* context, 
 
 			// Piston logic: push bodies directly
 			{
+#pragma message("Compiling Piston Logic in contact_solver.c")
 				b2FloatW pushMask = b2AndW( isPiston, b2GreaterThanW( b2ZeroW(), s ) ); // s < 0
 				if ( !b2AllZeroW( pushMask ) )
 				{

@@ -287,6 +287,9 @@ B2_API void b2Body_SetLinearVelocity( b2BodyId bodyId, b2Vec2 linearVelocity );
 /// Dynamic bodies touching the piston will be pushed but will not acquire the velocity.
 B2_API void b2Body_SetPistonVelocity( b2BodyId bodyId, b2Vec2 velocity );
 
+/// Is this body a piston?
+B2_API bool b2Body_IsPiston( b2BodyId bodyId );
+
 /// Set the angular velocity of a body in radians per second
 B2_API void b2Body_SetAngularVelocity( b2BodyId bodyId, float angularVelocity );
 

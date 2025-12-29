@@ -863,6 +863,13 @@ void b2Body_SetPistonVelocity( b2BodyId bodyId, b2Vec2 velocity )
 	}
 }
 
+bool b2Body_IsPiston( b2BodyId bodyId )
+{
+	b2World* world = b2GetWorld( bodyId.world0 );
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+	return (body->flags & b2_pistonBehavior) != 0;
+}
+
 void b2Body_SetAngularVelocity( b2BodyId bodyId, float angularVelocity )
 {
 	b2World* world = b2GetWorld( bodyId.world0 );
