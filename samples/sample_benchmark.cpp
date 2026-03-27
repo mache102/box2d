@@ -2749,10 +2749,10 @@ public:
 
 		float xPos = -10.0f;
 		float yBase = 0.0f;
-		float xGap = 5.0f;
+		float xGap = 10.0f;
 
 		// Directions: +X, -X, +Y, -Y
-		b2Vec2 dirs[] = { { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f } };
+		b2Vec2 dirs[] = { { -1.0f, 0.0f }, { 1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f } };
 		const char* labels[] = { "+X", "-X", "+Y", "-Y" };
 
 		for ( int i = 0; i < 4; ++i )
@@ -2770,7 +2770,7 @@ public:
 			bodyDef.position = { -10.0f, -0.5f }; // Piston Row Floor
 			b2BodyId groundId = b2CreateBody( m_worldId, &bodyDef );
 			b2ShapeDef shapeDef = b2DefaultShapeDef();
-			b2Polygon box = b2MakeBox( 5.0f, 0.25f );
+			b2Polygon box = b2MakeBox( 15.0f, 0.25f );
 			b2CreatePolygonShape( groundId, &shapeDef, &box );
 		}
 
