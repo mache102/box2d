@@ -394,6 +394,60 @@ static int TestSensor( void )
 	return 0;
 }
 
+static int TestCollisionMassScale( void )
+{
+	b2WorldDef worldDef = b2DefaultWorldDef();
+	worldDef.gravity = b2Vec2_zero;
+	b2WorldId worldId = b2CreateWorld( &worldDef );
+
+	b2BodyDef bodyDef = b2DefaultBodyDef();
+	bodyDef.type = b2_dynamicBody;
+
+	b2BodyId bodyA = b2CreateBody( worldId, &bodyDef );
+	b2BodyId bodyB = b2CreateBody( worldId, &bodyDef );
+
+	ENSURE_SMALL( b2Body_GetCollisionMassScale( bodyA ) - 1.0f, 0.0f );
+	ENSURE_SMALL( b2Body_GetCollisionMassScale( bodyB ) - 1.0f, 0.0f );
+
+	b2Body_SetCollisionMassScale( bodyA, 0.25f );
+	b2Body_SetCollisionMassScale( bodyB, 4.0f );
+
+	ENSURE_SMALL( b2Body_GetCollisionMassScale( bodyA ) - 0.25f, 0.0f );
+	ENSURE_SMALL( b2Body_GetCollisionMassScale( bodyB ) - 4.0f, 0.0f );
+
+	b2Circle circle = { { 0.0f, 0.0f }, 1.0f };
+	b2ShapeDef shapeDef = b2DefaultShapeDef();
+	shapeDef.density = 1.0f;
+	shapeDef.material.friction = 0.0f;
+	shapeDef.material.restitution = 0.0f;
+	b2CreateCircleShape( bodyA, &shapeDef, &circle );
+	b2CreateCircleShape( bodyB, &shapeDef, &circle );
+
+	b2Body_SetTransform( bodyA, (b2Vec2){ -0.2f, 0.0f }, b2Rot_identity );
+	b2Body_SetTransform( bodyB, (b2Vec2){ 0.2f, 0.0f }, b2Rot_identity );
+
+	b2Vec2 initialA = b2Body_GetPosition( bodyA );
+	b2Vec2 initialB = b2Body_GetPosition( bodyB );
+
+	for ( int i = 0; i < 20; ++i )
+	{
+		b2World_Step( worldId, 1.0f / 60.0f, 8 );
+	}
+
+	b2Vec2 finalA = b2Body_GetPosition( bodyA );
+	b2Vec2 finalB = b2Body_GetPosition( bodyB );
+
+	float moveA = b2Distance( finalA, initialA );
+	float moveB = b2Distance( finalB, initialB );
+
+	ENSURE( moveA > 0.0f );
+	ENSURE( moveB > 0.0f );
+	ENSURE( moveA > moveB * 2.0f );
+
+	b2DestroyWorld( worldId );
+	return 0;
+}
+
 int WorldTest( void )
 {
 	RUN_SUBTEST( HelloWorld );
@@ -403,6 +457,7 @@ int WorldTest( void )
 	RUN_SUBTEST( TestWorldRecycle );
 	RUN_SUBTEST( TestWorldCoverage );
 	RUN_SUBTEST( TestSensor );
+	RUN_SUBTEST( TestCollisionMassScale );
 
 	return 0;
 }

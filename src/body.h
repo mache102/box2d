@@ -95,6 +95,7 @@ typedef struct b2Body
 	int islandNext;
 
 	float mass;
+	float collisionMassScale;
 
 	// Rotational inertia about the center of mass.
 	float inertia;

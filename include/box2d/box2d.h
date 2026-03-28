@@ -367,6 +367,13 @@ B2_API void b2Body_ApplyAngularImpulse( b2BodyId bodyId, float impulse, bool wak
 /// Get the mass of the body, usually in kilograms
 B2_API float b2Body_GetMass( b2BodyId bodyId );
 
+/// Set a collision-only mass scale used for dynamic-dynamic contact response. Must be greater than zero.
+/// This does not change the body's physical mass or inertia.
+B2_API void b2Body_SetCollisionMassScale( b2BodyId bodyId, float collisionMassScale );
+
+/// Get the collision-only mass scale used for dynamic-dynamic contact response. Default is 1.
+B2_API float b2Body_GetCollisionMassScale( b2BodyId bodyId );
+
 /// Get the rotational inertia of the body, usually in kg*m^2
 B2_API float b2Body_GetRotationalInertia( b2BodyId bodyId );
 

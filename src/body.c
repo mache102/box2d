@@ -318,6 +318,7 @@ b2BodyId b2CreateBody( b2WorldId worldId, const b2BodyDef* def )
 	body->bodyMoveIndex = B2_NULL_INDEX;
 	body->id = bodyId;
 	body->mass = 0.0f;
+	body->collisionMassScale = 1.0f;
 	body->inertia = 0.0f;
 	body->sleepThreshold = def->sleepThreshold;
 	body->sleepTime = 0.0f;
@@ -1414,6 +1415,27 @@ float b2Body_GetMass( b2BodyId bodyId )
 	b2World* world = b2GetWorld( bodyId.world0 );
 	b2Body* body = b2GetBodyFullId( world, bodyId );
 	return body->mass;
+}
+
+void b2Body_SetCollisionMassScale( b2BodyId bodyId, float collisionMassScale )
+{
+	B2_ASSERT( b2IsValidFloat( collisionMassScale ) && collisionMassScale > 0.0f );
+
+	b2World* world = b2GetWorldLocked( bodyId.world0 );
+	if ( world == NULL )
+	{
+		return;
+	}
+
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+	body->collisionMassScale = collisionMassScale;
+}
+
+float b2Body_GetCollisionMassScale( b2BodyId bodyId )
+{
+	b2World* world = b2GetWorld( bodyId.world0 );
+	b2Body* body = b2GetBodyFullId( world, bodyId );
+	return body->collisionMassScale;
 }
 
 float b2Body_GetRotationalInertia( b2BodyId bodyId )
