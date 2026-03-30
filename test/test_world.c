@@ -448,6 +448,89 @@ static int TestCollisionMassScale( void )
 	return 0;
 }
 
+static int TestCollisionMassScaleLinearRatio( void )
+{
+	b2WorldDef worldDef = b2DefaultWorldDef();
+	worldDef.gravity = b2Vec2_zero;
+	b2WorldId worldId = b2CreateWorld( &worldDef );
+
+	b2BodyDef bodyDef = b2DefaultBodyDef();
+	bodyDef.type = b2_dynamicBody;
+
+	b2ShapeDef shapeDef = b2DefaultShapeDef();
+	shapeDef.density = 1.0f;
+	shapeDef.material.friction = 0.0f;
+	shapeDef.material.restitution = 0.0f;
+	b2Circle circle = { { 0.0f, 0.0f }, 1.0f };
+
+	// Case 1: equal scales -> equal separation movement
+	b2BodyId equalA = b2CreateBody( worldId, &bodyDef );
+	b2BodyId equalB = b2CreateBody( worldId, &bodyDef );
+	b2CreateCircleShape( equalA, &shapeDef, &circle );
+	b2CreateCircleShape( equalB, &shapeDef, &circle );
+	b2Body_SetTransform( equalA, (b2Vec2){ -0.2f, 0.0f }, b2Rot_identity );
+	b2Body_SetTransform( equalB, (b2Vec2){ 0.2f, 0.0f }, b2Rot_identity );
+	b2Body_SetCollisionMassScale( equalA, 1.0f );
+	b2Body_SetCollisionMassScale( equalB, 1.0f );
+
+	// Case 2: 1 vs 3 -> scale 1 body should separate ~3x more
+	b2BodyId oneVsThreeA = b2CreateBody( worldId, &bodyDef );
+	b2BodyId oneVsThreeB = b2CreateBody( worldId, &bodyDef );
+	b2CreateCircleShape( oneVsThreeA, &shapeDef, &circle );
+	b2CreateCircleShape( oneVsThreeB, &shapeDef, &circle );
+	b2Body_SetTransform( oneVsThreeA, (b2Vec2){ -0.2f, 4.5f }, b2Rot_identity );
+	b2Body_SetTransform( oneVsThreeB, (b2Vec2){ 0.2f, 4.5f }, b2Rot_identity );
+	b2Body_SetCollisionMassScale( oneVsThreeA, 1.0f );
+	b2Body_SetCollisionMassScale( oneVsThreeB, 3.0f );
+
+	// Case 3: 10 vs 3 -> scale 3 body should separate ~10/3 more
+	b2BodyId tenVsThreeA = b2CreateBody( worldId, &bodyDef );
+	b2BodyId tenVsThreeB = b2CreateBody( worldId, &bodyDef );
+	b2CreateCircleShape( tenVsThreeA, &shapeDef, &circle );
+	b2CreateCircleShape( tenVsThreeB, &shapeDef, &circle );
+	b2Body_SetTransform( tenVsThreeA, (b2Vec2){ -0.2f, 9.0f }, b2Rot_identity );
+	b2Body_SetTransform( tenVsThreeB, (b2Vec2){ 0.2f, 9.0f }, b2Rot_identity );
+	b2Body_SetCollisionMassScale( tenVsThreeA, 10.0f );
+	b2Body_SetCollisionMassScale( tenVsThreeB, 3.0f );
+
+	b2Vec2 equalStartA = b2Body_GetPosition( equalA );
+	b2Vec2 equalStartB = b2Body_GetPosition( equalB );
+	b2Vec2 oneVsThreeStartA = b2Body_GetPosition( oneVsThreeA );
+	b2Vec2 oneVsThreeStartB = b2Body_GetPosition( oneVsThreeB );
+	b2Vec2 tenVsThreeStartA = b2Body_GetPosition( tenVsThreeA );
+	b2Vec2 tenVsThreeStartB = b2Body_GetPosition( tenVsThreeB );
+
+	for ( int i = 0; i < 20; ++i )
+	{
+		b2World_Step( worldId, 1.0f / 60.0f, 8 );
+	}
+
+	float eqMoveA = b2Distance( equalStartA, b2Body_GetPosition( equalA ) );
+	float eqMoveB = b2Distance( equalStartB, b2Body_GetPosition( equalB ) );
+	float oneVsThreeMoveA = b2Distance( oneVsThreeStartA, b2Body_GetPosition( oneVsThreeA ) );
+	float oneVsThreeMoveB = b2Distance( oneVsThreeStartB, b2Body_GetPosition( oneVsThreeB ) );
+	float tenVsThreeMoveA = b2Distance( tenVsThreeStartA, b2Body_GetPosition( tenVsThreeA ) );
+	float tenVsThreeMoveB = b2Distance( tenVsThreeStartB, b2Body_GetPosition( tenVsThreeB ) );
+
+	ENSURE( eqMoveA > 0.0f );
+	ENSURE( eqMoveB > 0.0f );
+	ENSURE( oneVsThreeMoveA > 0.0f );
+	ENSURE( oneVsThreeMoveB > 0.0f );
+	ENSURE( tenVsThreeMoveA > 0.0f );
+	ENSURE( tenVsThreeMoveB > 0.0f );
+
+	float eqRatio = eqMoveA / eqMoveB;
+	float oneVsThreeRatio = oneVsThreeMoveA / oneVsThreeMoveB;
+	float tenVsThreeRatio = tenVsThreeMoveB / tenVsThreeMoveA;
+
+	ENSURE( 0.8f < eqRatio && eqRatio < 1.2f );
+	ENSURE( 2.5f < oneVsThreeRatio && oneVsThreeRatio < 3.5f );
+	ENSURE( 2.8f < tenVsThreeRatio && tenVsThreeRatio < 3.9f );
+
+	b2DestroyWorld( worldId );
+	return 0;
+}
+
 int WorldTest( void )
 {
 	RUN_SUBTEST( HelloWorld );
@@ -458,6 +541,7 @@ int WorldTest( void )
 	RUN_SUBTEST( TestWorldCoverage );
 	RUN_SUBTEST( TestSensor );
 	RUN_SUBTEST( TestCollisionMassScale );
+	RUN_SUBTEST( TestCollisionMassScaleLinearRatio );
 
 	return 0;
 }
