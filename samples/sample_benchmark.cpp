@@ -3007,8 +3007,8 @@ public:
 		const float setGapY = 4.5f;
 
 		CreateCollisionMassSet( setY0 + 0.0f * setGapY, true, 1.0f, true, 1.0f );
-		CreateCollisionMassSet( setY0 + 1.0f * setGapY, true, 1.0f, true, 3.0f );
-		CreateCollisionMassSet( setY0 + 2.0f * setGapY, true, 10.0f, true, 3.0f );
+		CreateCollisionMassSet( setY0 + 1.0f * setGapY, true, 1.0f, true, 1.1f );
+		CreateCollisionMassSet( setY0 + 2.0f * setGapY, true, 4.0f, true, 3.0f );
 	}
 
 	void CreateCollisionMassSet( float centerY, bool setLeftScale, float leftScale, bool setRightScale, float rightScale )
@@ -3041,7 +3041,7 @@ public:
 		{
 			b2Body_SetCollisionMassScale( leftId, leftScale );
 		}
-		b2Body_ApplyForceToCenter( leftId, { 600.0f, 0.0f }, true );
+		b2Body_ApplyForceToCenter( leftId, { 60.0f, 0.0f }, true );
 
 		b2BodyDef rightDef = b2DefaultBodyDef();
 		rightDef.type = b2_dynamicBody;
@@ -3052,7 +3052,7 @@ public:
 		{
 			b2Body_SetCollisionMassScale( rightId, rightScale );
 		}
-		b2Body_ApplyForceToCenter( rightId, { -600.0f, 0.0f }, true );
+		b2Body_ApplyForceToCenter( rightId, { -60.0f, 0.0f }, true );
 	}
 
 	static Sample* Create( SampleContext* context )

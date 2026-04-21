@@ -8,6 +8,7 @@
 #include "contact.h"
 #include "core.h"
 #include "physics_world.h"
+#include "shape.h"
 #include "solver_set.h"
 
 #include <stddef.h>
@@ -226,6 +227,7 @@ void b2WarmStartOverflowContacts( b2StepContext* context )
 			stateB->linearVelocity = vB;
 			stateB->angularVelocity = wB;
 		}
+
 	}
 
 	b2TracyCZoneEnd( warmstart_overflow_contact );
@@ -405,6 +407,9 @@ void b2ApplyOverflowRestitution( b2StepContext* context )
 	b2World* world = context->world;
 	b2SolverSet* awakeSet = b2SolverSetArray_Get( &world->solverSets, b2_awakeSet );
 	b2BodyState* states = awakeSet->bodyStates.data;
+	b2Shape* shapes = world->shapes.data;
+	b2Body* bodies = world->bodies.data;
+	b2ContactSim* contacts = color->contactSims.data;
 
 	float threshold = context->world->restitutionThreshold;
 
@@ -416,10 +421,7 @@ void b2ApplyOverflowRestitution( b2StepContext* context )
 		b2ContactConstraint* constraint = constraints + i;
 
 		float restitution = constraint->restitution;
-		if ( restitution == 0.0f )
-		{
-			continue;
-		}
+		bool applyCustomScaleOnly = restitution == 0.0f;
 
 		float mA = constraint->invMassA;
 		float iA = constraint->invIA;
@@ -441,45 +443,48 @@ void b2ApplyOverflowRestitution( b2StepContext* context )
 		// this only makes a difference if there are two contact points
 		// for (int iter = 0; iter < 10; ++iter)
 		{
-			for ( int j = 0; j < pointCount; ++j )
+			if ( applyCustomScaleOnly == false )
 			{
-				b2ContactConstraintPoint* cp = constraint->points + j;
-
-				// if the normal impulse is zero then there was no collision
-				// this skips speculative contact points that didn't generate an impulse
-				// The max normal impulse is used in case there was a collision that moved away within the sub-step process
-				if ( cp->relativeVelocity > -threshold || cp->totalNormalImpulse == 0.0f )
+				for ( int j = 0; j < pointCount; ++j )
 				{
-					continue;
+					b2ContactConstraintPoint* cp = constraint->points + j;
+
+					// if the normal impulse is zero then there was no collision
+					// this skips speculative contact points that didn't generate an impulse
+					// The max normal impulse is used in case there was a collision that moved away within the sub-step process
+					if ( cp->relativeVelocity > -threshold || cp->totalNormalImpulse == 0.0f )
+					{
+						continue;
+					}
+
+					// fixed anchor points
+					b2Vec2 rA = cp->anchorA;
+					b2Vec2 rB = cp->anchorB;
+
+					// relative normal velocity at contact
+					b2Vec2 vrB = b2Add( vB, b2CrossSV( wB, rB ) );
+					b2Vec2 vrA = b2Add( vA, b2CrossSV( wA, rA ) );
+					float vn = b2Dot( b2Sub( vrB, vrA ), normal );
+
+					// compute normal impulse
+					float impulse = -cp->normalMass * ( vn + restitution * cp->relativeVelocity );
+
+					// clamp the accumulated impulse
+					// todo should this be stored?
+					float newImpulse = b2MaxFloat( cp->normalImpulse + impulse, 0.0f );
+					impulse = newImpulse - cp->normalImpulse;
+					cp->normalImpulse = newImpulse;
+
+					// Add the incremental impulse rather than the full impulse because this is not a sub-step
+					cp->totalNormalImpulse += impulse;
+
+					// apply contact impulse
+					b2Vec2 P = b2MulSV( impulse, normal );
+					vA = b2MulSub( vA, mA, P );
+					wA -= iA * b2Cross( rA, P );
+					vB = b2MulAdd( vB, mB, P );
+					wB += iB * b2Cross( rB, P );
 				}
-
-				// fixed anchor points
-				b2Vec2 rA = cp->anchorA;
-				b2Vec2 rB = cp->anchorB;
-
-				// relative normal velocity at contact
-				b2Vec2 vrB = b2Add( vB, b2CrossSV( wB, rB ) );
-				b2Vec2 vrA = b2Add( vA, b2CrossSV( wA, rA ) );
-				float vn = b2Dot( b2Sub( vrB, vrA ), normal );
-
-				// compute normal impulse
-				float impulse = -cp->normalMass * ( vn + restitution * cp->relativeVelocity );
-
-				// clamp the accumulated impulse
-				// todo should this be stored?
-				float newImpulse = b2MaxFloat( cp->normalImpulse + impulse, 0.0f );
-				impulse = newImpulse - cp->normalImpulse;
-				cp->normalImpulse = newImpulse;
-
-				// Add the incremental impulse rather than the full impulse because this is not a sub-step
-				cp->totalNormalImpulse += impulse;
-
-				// apply contact impulse
-				b2Vec2 P = b2MulSV( impulse, normal );
-				vA = b2MulSub( vA, mA, P );
-				wA -= iA * b2Cross( rA, P );
-				vB = b2MulAdd( vB, mB, P );
-				wB += iB * b2Cross( rB, P );
 			}
 		}
 
@@ -493,6 +498,25 @@ void b2ApplyOverflowRestitution( b2StepContext* context )
 		{
 			stateB->linearVelocity = vB;
 			stateB->angularVelocity = wB;
+		}
+
+		b2ContactSim* contactSim = contacts + i;
+		b2Body* bodyA = bodies + shapes[contactSim->shapeIdA].bodyId;
+		b2Body* bodyB = bodies + shapes[contactSim->shapeIdB].bodyId;
+		if ( bodyA->type == b2_dynamicBody && bodyB->type == b2_dynamicBody )
+		{
+			float scaleA = bodyA->collisionMassScale;
+			float scaleB = bodyB->collisionMassScale;
+			if ( scaleA > scaleB )
+			{
+				float ratio = scaleA / scaleB;
+				stateB->linearVelocity = b2MulSV( ratio * ratio, stateB->linearVelocity );
+			}
+			else if ( scaleB > scaleA )
+			{
+				float ratio = scaleB / scaleA;
+				stateA->linearVelocity = b2MulSV( ratio * ratio, stateA->linearVelocity );
+			}
 		}
 	}
 
@@ -2287,18 +2311,15 @@ void b2ApplyRestitutionTask( int startIndex, int endIndex, b2StepContext* contex
 
 	b2BodyState* states = context->states;
 	b2ContactConstraintSIMD* constraints = context->graph->colors[colorIndex].simdConstraints;
+	b2ContactSim** contacts = context->contacts;
+	b2Shape* shapes = context->world->shapes.data;
+	b2Body* bodies = context->world->bodies.data;
 	b2FloatW threshold = b2SplatW( context->world->restitutionThreshold );
 	b2FloatW zero = b2ZeroW();
 
 	for ( int i = startIndex; i < endIndex; ++i )
 	{
 		b2ContactConstraintSIMD* c = constraints + i;
-
-		if ( b2AllZeroW( c->restitution ) )
-		{
-			// No lanes have restitution. Common case.
-			continue;
-		}
 
 		// Create a mask based on restitution so that lanes with no restitution are not affected
 		// by the calculations below.
@@ -2387,6 +2408,40 @@ void b2ApplyRestitutionTask( int startIndex, int endIndex, b2StepContext* contex
 			bB.v.X = b2MulAddW( bB.v.X, c->invMassB, Px );
 			bB.v.Y = b2MulAddW( bB.v.Y, c->invMassB, Py );
 			bB.w = b2MulAddW( bB.w, c->invIB, b2SubW( b2MulW( rB.X, Py ), b2MulW( rB.Y, Px ) ) );
+		}
+
+		int baseIndex = B2_SIMD_WIDTH * i;
+		for ( int laneIndex = 0; laneIndex < B2_SIMD_WIDTH; ++laneIndex )
+		{
+			b2ContactSim* contactSim = contacts[baseIndex + laneIndex];
+			if ( contactSim == NULL )
+			{
+				continue;
+			}
+
+			b2Body* bodyA = bodies + shapes[contactSim->shapeIdA].bodyId;
+			b2Body* bodyB = bodies + shapes[contactSim->shapeIdB].bodyId;
+			if ( bodyA->type != b2_dynamicBody || bodyB->type != b2_dynamicBody )
+			{
+				continue;
+			}
+
+			float scaleA = bodyA->collisionMassScale;
+			float scaleB = bodyB->collisionMassScale;
+			if ( scaleA > scaleB )
+			{
+				float ratio = scaleA / scaleB;
+				float scale = ratio * ratio;
+				( (float*)&bB.v.X )[laneIndex] *= scale;
+				( (float*)&bB.v.Y )[laneIndex] *= scale;
+			}
+			else if ( scaleB > scaleA )
+			{
+				float ratio = scaleB / scaleA;
+				float scale = ratio * ratio;
+				( (float*)&bA.v.X )[laneIndex] *= scale;
+				( (float*)&bA.v.Y )[laneIndex] *= scale;
+			}
 		}
 
 		b2ScatterBodies( states, c->indexA, &bA );

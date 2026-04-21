@@ -412,20 +412,6 @@ static void b2CollideTask( int startIndex, int endIndex, uint32_t threadIndex, v
 			contactSim->invMassB = bodySimB->invMass;
 			contactSim->invIB = bodySimB->invInertia;
 
-			if ( bodyA->type == b2_dynamicBody && bodyB->type == b2_dynamicBody )
-			{
-				float scaleA = bodyA->collisionMassScale;
-				float scaleB = bodyB->collisionMassScale;
-				if ( scaleA > scaleB )
-				{
-					contactSim->invMassB *= (scaleA / scaleB) * (scaleA / scaleB);
-				}
-				else if ( scaleB > scaleA )
-				{
-					contactSim->invMassA *= (scaleB / scaleA) * (scaleB / scaleA);
-				}
-			}
-
 			b2Transform transformA = bodySimA->transform;
 			b2Transform transformB = bodySimB->transform;
 
