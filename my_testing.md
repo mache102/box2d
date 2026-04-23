@@ -1,3 +1,22 @@
+# TLDR
+
+Rebuild box2d:
+```bash
+./build_nospec.sh
+```
+
+Run samples:
+```bash
+./build_nospec/bin/samples
+```
+
+To only rebuild samples after making changes:
+```bash
+cmake --build build_nospec --target samples
+```
+
+
+
 # Testing Workflow
 
 We maintain two simultaneous builds to compare the effect of disabling speculative collisions for static-dynamic pairs.

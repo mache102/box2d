@@ -3081,7 +3081,8 @@ static int benchmarkCollisionMassScale =
 class BenchmarkChainSegmentRoll : public Sample
 {
 public:
-	static constexpr int N_MAIN = 8;
+	static constexpr int N_MAIN = 80;
+	static constexpr int START_SPEED = 1000.0f;
 	static constexpr float SEG_LEN = 2.0f;
 	static constexpr float DROP = 8.0f;
 	static constexpr float BALL_RADIUS = SEG_LEN * 0.15f;
@@ -3116,18 +3117,19 @@ public:
 		shapeDef.density = 0.0f;
 
 		// Create chain segment shapes and remember their ids so we can set ghost vertices
+		// BTW, the segments need to be created in CCW order to be outwards facing
 		b2ShapeId segIds[N_MAIN + 2];
 		for ( int i = 0; i < M; ++i )
 		{
-			b2Segment seg = { pts[i], pts[( i + 1 ) % M] };
+			b2Segment seg = { pts[( i + 1 ) % M], pts[i] };
 			segIds[i] = b2CreateChainSegmentShape( groundId, &shapeDef, &seg );
 		}
 
 		// Set ghost vertices: ghost1 = point before segment start, ghost2 = point after segment end
 		for ( int i = 0; i < M; ++i )
 		{
-			b2Vec2 g1 = pts[( i - 1 + M ) % M];
-			b2Vec2 g2 = pts[( i + 2 ) % M];
+			b2Vec2 g2 = pts[( i - 1 + M ) % M];
+			b2Vec2 g1 = pts[( i + 2 ) % M];
 			b2ChainSegment_SetGhostVertices( segIds[i], g1, g2 );
 		}
 
@@ -3143,7 +3145,7 @@ public:
 		b2CreateCircleShape( m_ballId, &ballShapeDef, &circle );
 
 		// Push the ball to the right
-		b2Body_ApplyForceToCenter( m_ballId, { 30.0f, 0.0f }, true );
+		b2Body_ApplyForceToCenter( m_ballId, { START_SPEED, 0.0f }, true );
 	}
 
 	void Step() override
