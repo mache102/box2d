@@ -727,14 +727,15 @@ static void b2FinalizeBodiesTask( int startIndex, int endIndex, uint32_t threadI
 			// Body is not sleepy
 			body->sleepTime = 0.0f;
 
-			if ( body->type == b2_dynamicBody && enableContinuous && maxVelocity * timeStep > 0.5f * sim->minExtent )
+			bool isPiston = ( sim->flags & b2_pistonBehavior ) != 0;
+			if ( ( body->type == b2_dynamicBody || isPiston ) && enableContinuous && maxVelocity * timeStep > 0.5f * sim->minExtent )
 			{
 				// This flag is only retained for debug draw
 				sim->flags |= b2_isFast;
 
 				// Store in fast array for the continuous collision stage
 				// This is deterministic because the order of TOI sweeps doesn't matter
-				if ( sim->flags & b2_isBullet )
+				if ( ( sim->flags & b2_isBullet ) || isPiston )
 				{
 					int bulletIndex = b2AtomicFetchAddInt( &stepContext->bulletBodyCount, 1 );
 					stepContext->bulletBodies[bulletIndex] = simIndex;
@@ -2097,7 +2098,7 @@ void b2Solve( b2World* world, b2StepContext* stepContext )
 
 		// Serially enlarge broad-phase proxies for bullet shapes
 		b2BroadPhase* broadPhase = &world->broadPhase;
-		b2DynamicTree* dynamicTree = broadPhase->trees + b2_dynamicBody;
+		// b2DynamicTree* dynamicTree = broadPhase->trees + b2_dynamicBody;
 
 		// Fast array access is important here
 		b2Body* bodyArray = world->bodies.data;
@@ -2138,12 +2139,14 @@ void b2Solve( b2World* world, b2StepContext* stepContext )
 
 				int proxyKey = shape->proxyKey;
 				int proxyId = B2_PROXY_ID( proxyKey );
-				B2_ASSERT( B2_PROXY_TYPE( proxyKey ) == b2_dynamicBody );
+				// B2_ASSERT( B2_PROXY_TYPE( proxyKey ) == b2_dynamicBody );
 
 				// all fast bullet shapes should already be in the move buffer
 				B2_ASSERT( b2ContainsKey( &broadPhase->moveSet, proxyKey + 1 ) );
 
-				b2DynamicTree_EnlargeProxy( dynamicTree, proxyId, shape->fatAABB );
+				int type = B2_PROXY_TYPE( proxyKey );
+				b2DynamicTree* tree = broadPhase->trees + type;
+				b2DynamicTree_EnlargeProxy( tree, proxyId, shape->fatAABB );
 
 				shapeId = shape->nextShapeId;
 			}
