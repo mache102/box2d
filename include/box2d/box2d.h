@@ -521,6 +521,12 @@ B2_API b2ShapeId b2CreateCircleShape( b2BodyId bodyId, const b2ShapeDef* def, co
 /// @return the shape id for accessing the shape
 B2_API b2ShapeId b2CreateSegmentShape( b2BodyId bodyId, const b2ShapeDef* def, const b2Segment* segment );
 
+/// Create a chain segment shape and attach it to a body. Ghost vertices are initialized to the segment endpoints
+/// and chainId is set to B2_NULL_INDEX. Use b2ChainSegment_SetGhostVertices to configure proper ghost vertices.
+/// Contacts are not created until the next time step.
+/// @return the shape id for accessing the shape
+B2_API b2ShapeId b2CreateChainSegmentShape( b2BodyId bodyId, const b2ShapeDef* def, const b2Segment* segment );
+
 /// Create a capsule shape and attach it to a body. The shape definition and geometry are fully cloned.
 /// Contacts are not created until the next time step.
 /// @return the shape id for accessing the shape
@@ -646,6 +652,11 @@ B2_API b2Segment b2Shape_GetSegment( b2ShapeId shapeId );
 /// Get a copy of the shape's chain segment. These come from chain shapes.
 /// Asserts the type is correct.
 B2_API b2ChainSegment b2Shape_GetChainSegment( b2ShapeId shapeId );
+
+/// Set the ghost vertices for a chain segment shape created with b2CreateChainSegmentShape.
+/// ghost1 is the vertex before the segment start (i.e. start of the previous segment).
+/// ghost2 is the vertex after the segment end (i.e. end of the next segment).
+B2_API void b2ChainSegment_SetGhostVertices( b2ShapeId shapeId, b2Vec2 ghost1, b2Vec2 ghost2 );
 
 /// Get a copy of the shape's capsule. Asserts the type is correct.
 B2_API b2Capsule b2Shape_GetCapsule( b2ShapeId shapeId );

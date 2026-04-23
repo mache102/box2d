@@ -223,6 +223,43 @@ b2ShapeId b2CreateSegmentShape( b2BodyId bodyId, const b2ShapeDef* def, const b2
 	return b2CreateShape( bodyId, def, segment, b2_segmentShape );
 }
 
+b2ShapeId b2CreateChainSegmentShape( b2BodyId bodyId, const b2ShapeDef* def, const b2Segment* segment )
+{
+	float lengthSqr = b2DistanceSquared( segment->point1, segment->point2 );
+	if ( lengthSqr <= B2_LINEAR_SLOP * B2_LINEAR_SLOP )
+	{
+		B2_ASSERT( false );
+		return b2_nullShapeId;
+	}
+
+	b2ChainSegment chainSegment;
+	chainSegment.ghost1 = segment->point1;
+	chainSegment.segment = *segment;
+	chainSegment.ghost2 = segment->point2;
+	chainSegment.chainId = B2_NULL_INDEX;
+
+	return b2CreateShape( bodyId, def, &chainSegment, b2_chainSegmentShape );
+}
+
+void b2ChainSegment_SetGhostVertices( b2ShapeId shapeId, b2Vec2 ghost1, b2Vec2 ghost2 )
+{
+	b2World* world = b2GetWorldLocked( shapeId.world0 );
+	if ( world == NULL )
+	{
+		return;
+	}
+
+	b2Shape* shape = b2GetShape( world, shapeId );
+	B2_ASSERT( shape->type == b2_chainSegmentShape );
+	if ( shape->type != b2_chainSegmentShape )
+	{
+		return;
+	}
+
+	shape->chainSegment.ghost1 = ghost1;
+	shape->chainSegment.ghost2 = ghost2;
+}
+
 // Destroy a shape on a body. This doesn't need to be called when destroying a body.
 static void b2DestroyShapeInternal( b2World* world, b2Shape* shape, b2Body* body, bool wakeBodies )
 {
