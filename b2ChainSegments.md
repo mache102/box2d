@@ -1,3 +1,4 @@
+## impl 
 Implement this to create b2ChainSegments:
 
 ```c
@@ -30,3 +31,13 @@ B2_API void b2ChainSegment_SetGhostVertices(b2ShapeId shapeId, b2Vec2 ghost1, b2
 ```
 
 Which lets us set the ghost vertices by referencing our b2ChainSegment shape via shapeId. 
+
+ghost1 should be the vertex before the start of the line segment (ie start of the prev seg)
+ghost2 should be the vertex after the end of the line segment (ie end of the next seg)
+
+## benchmark
+
+create a benchmark in sample_benchmark.cpp.
+
+put together several b2ChainSegment shapes, setting ghost vertices appropriately. simulate a ball (size is fraction of each segment length) rolling over the seg. 
+to ensure a closed loop, add two more consecutive segments: one starts from the last  point, going downwards. and another from the downwards point, going back to the first point.
