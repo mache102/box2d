@@ -3166,3 +3166,127 @@ public:
 
 static int benchmarkChainSegmentRoll =
 	RegisterSample( "Benchmark", "Chain Segment Roll", BenchmarkChainSegmentRoll::Create );
+
+
+// Chain segment version of GroundGhost: identical ball/force parameters, using b2CreateChainSegmentShape
+// and b2ChainSegment_SetGhostVertices instead of ground boxes. Segments are CCW-wound (top surface goes
+// west so b2RightPerp gives an upward normal, supporting the ball from above). Two closing segments
+// (drop + diagonal return) complete the loop so every segment has valid ghost vertices.
+class BenchmarkChainSegmentGhost : public Sample
+{
+public:
+	static constexpr int N_MAIN = 200;
+	static constexpr float SEG_LEN = 1.0f;  // matches GROUND_W in BenchmarkGroundGhost
+	static constexpr float DROP = 8.0f;
+	// Surface y matches GroundGhost top face (GROUND_HEIGHT + GROUND_H/2 = -0.75 + 0.5)
+	static constexpr float SURF_Y = -0.25f;
+	static constexpr float BALL_RADIUS = 0.25f;
+	static constexpr b2Vec2 BALL_START = { 0.0f, 0.0f };
+	static constexpr float FORCE = 50.0f;
+	static constexpr float DT = 1.0f / 60.0f;
+	static constexpr float LIFTOFF_THRESHOLD = 0.1f;
+
+	explicit BenchmarkChainSegmentGhost( SampleContext* context )
+		: Sample( context )
+	{
+		if ( m_context->restart == false )
+		{
+			m_context->camera.center = { 0.0f, 5.0f };
+			m_context->camera.zoom = 25.0f;
+		}
+
+		m_context->enableSleep = false;
+		m_tick = 0;
+		m_liftoff_x_val = -HUGE_VALF;
+		m_max_height_reached = BALL_START.y;
+
+		// M total vertices define M segments in the closed CCW loop:
+		//   pts[0..N_MAIN] : top surface going WEST (right to left)
+		//                     pts[0] = top-right, pts[N_MAIN] = top-left (near ball start)
+		//   pts[N_MAIN+1]  : drop vertex below top-left corner
+		//   loop closes back to pts[0] via diagonal return segment
+		const int M = N_MAIN + 2;
+		b2Vec2 pts[N_MAIN + 2];
+
+		for ( int i = 0; i <= N_MAIN; ++i )
+		{
+			pts[i] = { ( N_MAIN - i ) * SEG_LEN, SURF_Y };
+		}
+		pts[N_MAIN + 1] = { 0.0f, SURF_Y - DROP };
+
+		b2BodyDef groundDef = b2DefaultBodyDef();
+		b2BodyId groundId = b2CreateBody( m_worldId, &groundDef );
+
+		b2ShapeDef shapeDef = b2DefaultShapeDef();
+		shapeDef.density = 0.0f;
+
+		b2ShapeId segIds[N_MAIN + 2];
+		for ( int i = 0; i < M; ++i )
+		{
+			b2Segment seg = { pts[i], pts[( i + 1 ) % M] };
+			segIds[i] = b2CreateChainSegmentShape( groundId, &shapeDef, &seg );
+		}
+
+		for ( int i = 0; i < M; ++i )
+		{
+			b2Vec2 g1 = pts[( i - 1 + M ) % M];
+			b2Vec2 g2 = pts[( i + 2 ) % M];
+			b2ChainSegment_SetGhostVertices( segIds[i], g1, g2 );
+		}
+
+		b2BodyDef ballDef = b2DefaultBodyDef();
+		ballDef.type = b2_dynamicBody;
+		ballDef.position = BALL_START;
+		m_ballId = b2CreateBody( m_worldId, &ballDef );
+
+		b2ShapeDef ballShapeDef = b2DefaultShapeDef();
+		ballShapeDef.density = 1.0f;
+		b2Circle circle = { { 0.0f, 0.0f }, BALL_RADIUS };
+		b2CreateCircleShape( m_ballId, &ballShapeDef, &circle );
+
+		b2Body_ApplyForceToCenter( m_ballId, { FORCE * ( 0.5f / DT ), 0.0f }, true );
+	}
+
+	void Step() override
+	{
+		Sample::Step();
+		m_tick++;
+
+		b2Vec2 ballPos = b2Body_GetPosition( m_ballId );
+
+		if ( ballPos.y > m_max_height_reached )
+		{
+			m_max_height_reached = ballPos.y;
+		}
+		if ( m_liftoff_x_val == -HUGE_VALF && ballPos.y > LIFTOFF_THRESHOLD )
+		{
+			m_liftoff_x_val = ballPos.x;
+		}
+
+		DrawTextLine( "Tick: %d", m_tick );
+		DrawTextLine( "Current pos: (%.2f, %.2f)", ballPos.x, ballPos.y );
+		DrawTextLine( "Max Height Reached: %.2f", m_max_height_reached );
+
+		if ( m_liftoff_x_val != -HUGE_VALF )
+		{
+			DrawTextLine( "Liftoff detected at x = %.2f", m_liftoff_x_val );
+		}
+		else
+		{
+			DrawTextLine( "Liftoff not yet detected" );
+		}
+	}
+
+	static Sample* Create( SampleContext* context )
+	{
+		return new BenchmarkChainSegmentGhost( context );
+	}
+
+	b2BodyId m_ballId;
+	int m_tick;
+	float m_max_height_reached;
+	float m_liftoff_x_val;
+};
+
+static int benchmarkChainSegmentGhost =
+	RegisterSample( "Benchmark", "Chain Segment Ghost", BenchmarkChainSegmentGhost::Create );
