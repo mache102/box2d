@@ -23,4 +23,5 @@
 #### Technical changes
 - Added `b2CreateChainSegmentShape` to `src/shape.c` and `include/box2d/box2d.h` — creates a `b2ChainSegment` shape attached to a body with `chainId = B2_NULL_INDEX` and default ghost vertices
 - Added `b2ChainSegment_SetGhostVertices` to `src/shape.c` and `include/box2d/box2d.h` — sets ghost1/ghost2 on an existing chain segment shape by shapeId
+- Added `b2ChainSegment_SetGhostVertex1` and `b2ChainSegment_SetGhostVertex2` to `src/shape.c` and `include/box2d/box2d.h` — set ghost1 or ghost2 individually
 - Added `BenchmarkChainSegmentRoll` to `samples/sample_benchmark.cpp` — closed loop of N_MAIN+2 chain segments with correct ghost vertices; ball rolls along the top surface

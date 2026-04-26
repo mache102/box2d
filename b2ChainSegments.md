@@ -24,16 +24,21 @@ A b2ChainSegment has:
 Where the two ghost vertices do not need to be assigned initially, and chainId can be B2_NULL_INDEX or -1 as we are not creating chain shapes here. 
 
 
-Also create 
+Also create
 
 ```c
 B2_API void b2ChainSegment_SetGhostVertices(b2ShapeId shapeId, b2Vec2 ghost1, b2Vec2 ghost2);
+B2_API void b2ChainSegment_SetGhostVertex1(b2ShapeId shapeId, b2Vec2 ghost1);
+B2_API void b2ChainSegment_SetGhostVertex2(b2ShapeId shapeId, b2Vec2 ghost2);
 ```
 
 Which lets us set the ghost vertices by referencing our b2ChainSegment shape via shapeId. 
 
 ghost1 should be the vertex before the start of the line segment (ie start of the prev seg)
 ghost2 should be the vertex after the end of the line segment (ie end of the next seg)
+
+### impl = deletion
+
 
 ## benchmark
 

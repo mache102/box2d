@@ -658,6 +658,12 @@ B2_API b2ChainSegment b2Shape_GetChainSegment( b2ShapeId shapeId );
 /// ghost2 is the vertex after the segment end (i.e. end of the next segment).
 B2_API void b2ChainSegment_SetGhostVertices( b2ShapeId shapeId, b2Vec2 ghost1, b2Vec2 ghost2 );
 
+/// Set ghost vertex 1 for a chain segment shape.
+B2_API void b2ChainSegment_SetGhostVertex1( b2ShapeId shapeId, b2Vec2 ghost1 );
+
+/// Set ghost vertex 2 for a chain segment shape.
+B2_API void b2ChainSegment_SetGhostVertex2( b2ShapeId shapeId, b2Vec2 ghost2 );
+
 /// Get a copy of the shape's capsule. Asserts the type is correct.
 B2_API b2Capsule b2Shape_GetCapsule( b2ShapeId shapeId );
 
